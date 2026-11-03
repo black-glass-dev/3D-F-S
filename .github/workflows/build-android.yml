@@ -1,11 +1,16 @@
 name: Build Android APK
 
-# কখন বিল্ড হবে: ম্যানুয়ালি (Actions ট্যাব থেকে) অথবা main ব্রাঞ্চে push হলে
+# কখন বিল্ড হবে:
+#  - ম্যানুয়ালি (Actions ট্যাব → Run workflow)
+#  - main ব্রাঞ্চে push হলে
+#  - build- দিয়ে শুরু হওয়া ট্যাগ push হলে (অটো-ট্রিগার)
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+    tags:
+      - 'build-*'
 
 jobs:
   build:
@@ -28,9 +33,12 @@ jobs:
           restore-keys: |
             Library-Android-
 
-      # 3) ডিস্ক স্পেস খালি করা (Unity Android বিল্ডের জন্য লাগে)
+      # 3) ডিস্ক স্পেস খালি করা (Unity Android বিল্ডের জন্য ২০+ GB লাগে)
       - name: Free disk space
-        uses: jlumbroso/free-disk-[email protected]
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
+          sudo docker image prune --all --force || true
+          df -h /
 
       # 4) Unity দিয়ে APK বিল্ড
       #    দরকারি Secrets (Repo Settings > Secrets and variables > Actions):

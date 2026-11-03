@@ -4,9 +4,14 @@ name: Unity License Activation (One-Time)
 # চালালে একটা .alf ফাইল পাওয়া যাবে, সেটা license.unity3d.com-এ আপলোড করে
 # .ulf ফাইল পাবেন — ওই .ulf-এর কনটেন্ট UNITY_LICENSE Secret হিসেবে বসাতে হবে।
 # বিস্তারিত: README.md-এর "GitHub Secrets সেটআপ" অংশ।
+#
+# চালানোর ৩ উপায়: Actions ট্যাব → Run workflow | activate- দিয়ে শুরু হওয়া ট্যাগ push | ম্যানুয়াল
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'activate-*'
 
 jobs:
   activation:
@@ -22,6 +27,6 @@ jobs:
       - name: Upload .alf file
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.getManualLicenseFile.outputs.filePath }}
+          name: Unity-Activation-File
           path: ${{ steps.getManualLicenseFile.outputs.filePath }}
           retention-days: 7
