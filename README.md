@@ -27,26 +27,24 @@
 
 ## 📲 APK বানানো (GitHub Actions)
 
-### ধাপ ১ — একবারের জন্য Unity লাইসেন্স Secret সেটআপ (আপনাকে করতে হবে, ~10 মিনিট)
+### ধাপ ১ — একবারের জন্য Unity অ্যাকাউন্টের ২টি Secret বসানো (আপনাকে করতে হবে, ~২ মিনিট)
 
-> Unity দিয়ে ক্লাউডে বিল্ড করতে লাইসেন্স লাগে। এটা ছাড়া বিল্ড চলবে না — এটা Unity-র নিয়ম, এড়ানোর উপায় নেই। **আপনার পাসওয়ার্ড/লাইসেন্স কাউকে (আমাকেও না) দেওয়ার দরকার নেই — শুধু GitHub Secrets-এ বসাবেন।**
+> Unity দিয়ে ক্লাউডে বিল্ড করতে লাইসেন্স লাগে। **ফ্রি Unity Personal অ্যাকাউন্টই যথেষ্ট** — টাকা লাগবে না।
+> ⚠️ Unity এখন ফ্রি অ্যাকাউন্টের "ম্যানুয়াল অ্যাক্টিভেশন" (.alf/.ulf) বন্ধ করে দিয়েছে, তাই কোনো ফাইল ডাউনলোড করা লাগবে না — শুধু ইমেইল + পাসওয়ার্ড দিলেই বিল্ড মেশিন নিজে থেকেই লাইসেন্স চালু করে নেবে।
+> **পাসওয়ার্ড আমাকে (বা কাউকে) দেওয়ার দরকার নেই — শুধু GitHub Secrets-এ বসাবেন।**
 
-1. [id.unity.com](https://id.unity.com)-এ ফ্রি Unity অ্যাকাউন্ট খুলুন (যদি না থাকে)।
-2. এই রিপোতে যান: **Actions → "Unity License Activation (One-Time)" → Run workflow**।
-3. রান শেষ হলে নিচের **Artifacts** থেকে `.alf` ফাইলটি ডাউনলোড করুন।
-4. [license.unity3d.com/manual](https://license.unity3d.com/manual)-এ গিয়ে `.alf` ফাইল আপলোড করুন → একটি `.ulf` ফাইল ডাউনলোড হবে।
-5. `.ulf` ফাইলটি টেক্সট এডিটরে খুলে **পুরো কনটেন্ট কপি** করুন।
-6. রিপোতে যান: **Settings → Secrets and variables → Actions → New repository secret**, এই 3টি Secret বানান:
+1. এই লিংকে যান 👉 **[Settings → Secrets and variables → Actions](https://github.com/islamyousuf032-glitch/3D-F-S/settings/secrets/actions)**
+2. সবুজ **New repository secret** বোতামে চাপ দিন →
+   - **Name:** `UNITY_EMAIL` · **Secret:** আপনার Unity অ্যাকাউন্টের ইমেইল → **Add secret**
+3. আবার **New repository secret** → **Name:** `UNITY_PASSWORD` · **Secret:** আপনার Unity পাসওয়ার্ড → **Add secret**
 
-   | Secret নাম | মান |
-   |---|---|
-   | `UNITY_LICENSE` | `.ulf` ফাইলের পুরো কনটেন্ট |
-   | `UNITY_EMAIL` | আপনার Unity অ্যাকাউন্টের ইমেইল |
-   | `UNITY_PASSWORD` | আপনার Unity পাসওয়ার্ড |
+ব্যস! দুটো Secret-ই হয়ে গেল। (যদি Unity অ্যাকাউন্টে 2FA/টু-স্টেপ চালু থাকে, বন্ধ রাখতে হতে পারে — অথবা পাসওয়ার্ডে বিশেষ চিহ্ন না থাকলে ভালো।)
 
-### ধাপ ২ — APK বিল্ড
+### ধাপ ২ — APK বিল্ড (বোতাম চাপার দরকার নেই)
 
-**Actions → "Build Android APK" → Run workflow** চালান (অথবা `main` ব্রাঞ্চে push করলেই অটো বিল্ড হবে)। 10–20 মিনিট পর রান পেজের **Artifacts** থেকে `FarmSim-Android-APK` ডাউনলোড করে ফোনে ইনস্টল করুন। ✅
+Secret বসানোর পর শুধু আমাকে জানালেই আমি বিল্ডটা চালু করে দেবো (মধ্যে `build-*` ট্যাগ দিয়ে অটো-ট্রিগার হয়)।
+
+নিজে চালাতে চাইলে: **Actions → "Build Android APK" → Run workflow** → 10–20 মিনিট পর ওই রান পেজের নিচে **Artifacts** থেকে `FarmSim-Android-APK` ডাউনলোড করে ফোনে ইনস্টল করুন। ✅
 
 > APKটি debug keystore দিয়ে সাইন করা — নিজে টেস্ট/সাইডলোড করার জন্য যথেষ্ট। Play Store-এ দিতে চাইলে আসল keystore লাগবে (চাইলে আমি সেটআপ করে দেবো)।
 

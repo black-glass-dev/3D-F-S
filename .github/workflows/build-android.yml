@@ -40,19 +40,17 @@ jobs:
           sudo docker image prune --all --force || true
           df -h /
 
-      # 4) Unity দিয়ে APK বিল্ড
+      # 4) Unity লাইসেন্স চালু + APK বিল্ড
       #    দরকারি Secrets (Repo Settings > Secrets and variables > Actions):
-      #      UNITY_LICENSE  — .ulf লাইসেন্স ফাইলের পুরো কনটেন্ট
       #      UNITY_EMAIL    — Unity অ্যাকাউন্টের ইমেইল
       #      UNITY_PASSWORD — Unity অ্যাকাউন্টের পাসওয়ার্ড
-      #    কীভাবে পাবেন: README.md-এর "GitHub Secrets সেটআপ" অংশ দেখুন।
+      #    (Unity Personal = ফ্রি অ্যাকাউন্টেই কাজ করবে)
       - name: Build Android APK with Unity
         uses: game-ci/unity-builder@v4
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           targetPlatform: Android
           buildMethod: FarmSim.Editor.CiBuild.PerformBuild
