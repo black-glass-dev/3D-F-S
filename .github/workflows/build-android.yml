@@ -57,49 +57,59 @@ jobs:
 
       # 5) APK বিল্ড
       - name: Build APK
+        shell: bash
         run: |
+          set +e          # নিজে এরর হ্যান্ডল করা হবে (GitHub ডিফল্টে -e চালায়)
           set -o pipefail
-          echo "UNITY_EDITOR_PATH=$UNITY_EDITOR_PATH"
 
-          # Unity-র এক্সিকিউটেবল খুঁজে বের করা (পথ ফোল্ডার না ফাইল — দুটোই সামলায়)
+          echo "workspace: $GITHUB_WORKSPACE"
+          echo "UNITY_EDITOR_PATH=[$UNITY_EDITOR_PATH]"
+
+          # Unity এক্সিকিউটেবল খোঁজা (পথ ফাইল না ফোল্ডার — দুটোই সামলায়)
           UNITY=""
-          for candidate in \
-            "$UNITY_EDITOR_PATH" \
-            "$UNITY_EDITOR_PATH/Editor/Unity"; do
-            if [ -n "$candidate" ] && [ -x "$candidate" ] && [ ! -d "$candidate" ]; then
+          for candidate in "$UNITY_EDITOR_PATH" "$UNITY_EDITOR_PATH/Editor/Unity"; do
+            if [ -n "$candidate" ] && [ -f "$candidate" ] && [ -x "$candidate" ]; then
               UNITY="$candidate"; break
             fi
           done
-          if [ -z "$UNITY" ]; then
+          if [ -z "$UNITY" ] && [ -d "$UNITY_EDITOR_PATH" ]; then
             UNITY=$(find "$UNITY_EDITOR_PATH" -maxdepth 4 -type f -name Unity -perm -u+x 2>/dev/null | head -n 1)
           fi
-          echo "Using Unity: $UNITY"
-          if [ -z "$UNITY" ]; then echo "::error::Unity executable not found under $UNITY_EDITOR_PATH"; exit 1; fi
+          echo "Using Unity: [$UNITY]"
 
-          STATUS=0
+          if [ -z "$UNITY" ]; then
+            echo "::error::Unity executable not found under [$UNITY_EDITOR_PATH]"
+            find "$UNITY_EDITOR_PATH" -maxdepth 3 2>/dev/null | head -n 10 | while IFS= read -r l; do
+              echo "::warning::DIAG $l"
+            done
+            exit 1
+          fi
+
+          # বিল্ড চালানো — সব আউটপুট ফাইলে রাখা হয়
           "$UNITY" \
             -batchmode \
             -nographics \
             -quit \
             -projectPath "$GITHUB_WORKSPACE" \
             -executeMethod FarmSim.Editor.CiBuild.PerformBuild \
-            -logFile "$GITHUB_WORKSPACE/unity-build.log" || STATUS=$?
+            -logFile /dev/stdout > unity-build.log 2>&1
+          STATUS=$?
           echo "Unity exit code: $STATUS"
 
           if [ "$STATUS" -ne 0 ] || [ ! -f build/Android/FarmSim.apk ]; then
-            echo "=== Build failed, surfacing errors as annotations ==="
-            grep -E "error CS[0-9]+|Error:|Exception|executeMethod|FAILED|Compilation failed" \
-              unity-build.log 2>/dev/null | head -n 12 | while IFS= read -r line; do
-              echo "::error::$line"
+            echo "=== errors from unity-build.log ==="
+            grep -aE "error CS[0-9]+|Error:|Exception|executeMethod|Build finished|FAILED|Compilation failed|Aborting" \
+              unity-build.log 2>/dev/null | head -n 8 | while IFS= read -r l; do
+              echo "::error::UNITY $l"
             done
-            echo "=== last log lines ==="
-            tail -n 15 unity-build.log 2>/dev/null | while IFS= read -r line; do
-              echo "::error::LOG $line"
+            echo "=== tail of unity-build.log ==="
+            tail -n 12 unity-build.log 2>/dev/null | while IFS= read -r l; do
+              echo "::warning::TAIL $l"
             done
             exit 1
           fi
-          echo "APK built OK"
 
+          echo "APK built successfully"
       # 6) APK তৈরি হয়েছে কিনা যাচাই
       - name: Verify APK exists
         run: |
