@@ -9,10 +9,13 @@ using UnityEngine;
 namespace FarmSim.Editor
 {
     /// <summary>
-    /// CI entry point used by GitHub Actions (game-ci/unity-builder).
-    /// Creates the Main scene (a single GameBootstrap object — the whole
-    /// game is built at runtime), applies Android player settings and
-    /// builds an APK to build/Android/FarmSim.apk.
+    /// CI entry point used by GitHub Actions.
+    /// Creates the Main scene (a single GameBootstrap object — the whole game is
+    /// built at runtime), applies Android player settings and builds an APK to
+    /// build/Android/FarmSim.apk.
+    ///
+    /// Run locally: menu FarmSim → Build Android APK (CI)
+    /// Run in CI   : Unity -batchmode -quit -executeMethod FarmSim.Editor.CiBuild.PerformBuild
     /// </summary>
     public static class CiBuild
     {
@@ -22,28 +25,39 @@ namespace FarmSim.Editor
         [MenuItem("FarmSim/Build Android APK (CI)")]
         public static void PerformBuild()
         {
-            CreateMainScene();
-            ApplyPlayerSettings();
-
-            Directory.CreateDirectory("build/Android");
-
-            var options = new BuildPlayerOptions
+            try
             {
-                scenes = new[] { ScenePath },
-                locationPathName = ApkPath,
-                target = BuildTarget.Android,
-                options = BuildOptions.None
-            };
+                CreateMainScene();
+                ApplyPlayerSettings();
 
-            BuildReport report = BuildPipeline.BuildPlayer(options);
-            if (report.summary.result != BuildResult.Succeeded)
-            {
-                throw new Exception("Android build failed: " + report.summary.result +
-                                    " (" + report.summary.totalErrors + " errors)");
+                Directory.CreateDirectory("build/Android");
+
+                var options = new BuildPlayerOptions
+                {
+                    scenes = new[] { ScenePath },
+                    locationPathName = ApkPath,
+                    target = BuildTarget.Android,
+                    options = BuildOptions.None
+                };
+
+                BuildReport report = BuildPipeline.BuildPlayer(options);
+                if (report.summary.result != BuildResult.Succeeded)
+                {
+                    throw new Exception("Android build failed: " + report.summary.result +
+                                        " (" + report.summary.totalErrors + " errors)");
+                }
+
+                Debug.Log("APK BUILD SUCCEEDED: " + ApkPath +
+                          " (" + (report.summary.totalSize / (1024UL * 1024UL)) + " MB)");
             }
-
-            Debug.Log("Android APK built successfully: " + ApkPath +
-                      " (" + (report.summary.totalSize / (1024UL * 1024UL)) + " MB)");
+            catch (Exception e)
+            {
+                Debug.LogError("APK BUILD FAILED: " + e);
+                // In batch mode make the CI job fail instead of exiting 0.
+                if (Application.isBatchMode)
+                    EditorApplication.Exit(1);
+                throw;
+            }
         }
 
         private static void CreateMainScene()
@@ -61,7 +75,7 @@ namespace FarmSim.Editor
 
         private static void ApplyPlayerSettings()
         {
-            PlayerSettings.companyName = "FarmSim Studio";
+            PlayerSettings.companyName = "FarmSimStudio";
             PlayerSettings.productName = "3D Farm Simulator";
             PlayerSettings.bundleVersion = "1.0.0";
 
@@ -73,11 +87,15 @@ namespace FarmSim.Editor
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
 
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-            // No custom keystore in CI: Unity signs with the debug keystore,
-            // which is fine for testing/sideloading. For Play Store, add a
-            // real keystore via GitHub Secrets (see README).
+
+            // Ship an APK (not an .aab) so it can be installed directly on a phone.
+            EditorUserBuildSettings.buildAppBundle = false;
+
+            // No custom keystore in CI: Unity signs with the debug keystore, which
+            // is fine for testing/sideloading. For Play Store, add a real keystore
+            // via GitHub Secrets (see README).
             PlayerSettings.Android.useCustomKeystore = false;
         }
     }

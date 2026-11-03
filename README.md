@@ -67,14 +67,13 @@ Assets/
 ├── Editor/CiBuild.cs  # CI-তে সিন তৈরি + APK বিল্ড
 └── Scenes/            # বিল্ডের সময় অটো-তৈরি হয়
 .github/workflows/
-├── build-android.yml  # APK বিল্ড পাইপলাইন (GameCI)
-└── activation.yml     # একবারের লাইসেন্স সেটআপ
+└── build-android.yml  # APK বিল্ড পাইপলাইন (Unity CLI + অনলাইন লাইসেন্স)
 ```
 
 ---
 
 ## 🇬🇧 English Summary
 
-A **2.5D isometric mobile farming simulation** built with **Unity 2022.3 LTS** for Android. Tap soil plots to plant seeds (wheat/tomato/pumpkin), water crops to speed growth, harvest golden crops to earn coins. Includes a day/night cycle, auto-save, bilingual UI (Bangla/English), and touch camera (drag to pan, pinch to zoom). All visuals are procedural low-poly — zero external assets. The APK is built via **GitHub Actions + GameCI**; see the setup steps above (a one-time Unity license secret is required).
+A **2.5D isometric mobile farming simulation** built with **Unity 2022.3 LTS** for Android. Tap soil plots to plant seeds (wheat/tomato/pumpkin), water crops to speed growth, harvest golden crops to earn coins. Includes a day/night cycle, auto-save, bilingual UI (Bangla/English), and touch camera (drag to pan, pinch to zoom). All visuals are procedural low-poly — zero external assets. The APK is built by **GitHub Actions** (installs Unity 2022.3 + Android module, activates a free Personal license online, then builds with the Unity CLI); see the setup steps above.
 
 **Roadmap ideas:** 🐄 animals (cow/chicken), 🏪 village shop NPC, 🚜 tractor, 🌦️ weather/seasons, 🎵 sound & music.
