@@ -87,8 +87,11 @@ namespace FarmSim.Editor
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
 
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
+            // 64-bit ARM requires IL2CPP (Mono only supports 32-bit ARM on Android).
+            // IL2CPP is also what Google Play demands for new uploads.
+            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Release);
 
             // Ship an APK (not an .aab) so it can be installed directly on a phone.
             EditorUserBuildSettings.buildAppBundle = false;
