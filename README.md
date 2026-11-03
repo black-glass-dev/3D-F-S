@@ -52,7 +52,7 @@ Secret বসানোর পর শুধু আমাকে জানালে
 
 ## 🛠️ লোকালে চালানো (ঐচ্ছিক)
 
-1. [Unity Hub](https://unity.com/download) দিয়ে **Unity 2022.3.45f1** (Android Build Support সহ) ইনস্টল করুন।
+1. [Unity Hub](https://unity.com/download) দিয়ে **Unity 2022.3.62f3** (Android Build Support সহ) ইনস্টল করুন।
 2. এই রিপো ক্লোন করে Unity Hub-এ **Open** করুন।
 3. মেনু: **FarmSim → Build Android APK (CI)** — অথবা Play বোতাম চাপলেই গেম চলবে (সিন অটো-তৈরি হয়, কিছু সেটআপ লাগে না)।
 
