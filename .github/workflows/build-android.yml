@@ -16,6 +16,8 @@ jobs:
   build:
     name: Build Android APK (Unity)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     timeout-minutes: 90
     steps:
       # 1) কোড চেকআউট
@@ -169,3 +171,19 @@ jobs:
           path: build/Android/FarmSim.apk
           if-no-files-found: error
           retention-days: 30
+
+      # 8) build-* ট্যাগ হলে APK-টা GitHub Release-এ সরাসরি যুক্ত হয় (এক ক্লিকে ডাউনলোড)
+      - name: Publish APK as a Release asset
+        if: startsWith(github.ref, 'refs/tags/build-')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Android/FarmSim.apk
+          name: Farm Simulator — ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            🌾 3D Farm Simulator (Unity 2.5D isometric) — Android APK
+
+            - ফোনে ইনস্টল করতে নিচের `FarmSim.apk` ফাইলটা ডাউনলোড করুন
+            - Android 7.0+ (ARM64), ল্যান্ডস্কেপ, বাংলা/English UI
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
