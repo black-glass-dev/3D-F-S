@@ -31,12 +31,12 @@ jobs:
           sudo docker image prune --all --force || true
           df -h /
 
-      # 3) Unity 2022.3 ইনস্টল (Android বিল্ড সাপোর্টসহ) — ProjectVersion.txt থেকে ভার্সন নেয়
+      # 3) Unity 2022.3 ইনস্টল (Android বিল্ড সাপোর্টসহ) — ভার্সন ProjectVersion.txt থেকে
       - name: Install Unity 2022.3 + Android module
         id: unity
         uses: buildalon/unity-setup@v3
         with:
-          unity-version: '2022.3.45f1'
+          version-file: 'ProjectSettings/ProjectVersion.txt'
           build-targets: Android
           cache-installation: true
 
