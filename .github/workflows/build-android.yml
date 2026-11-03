@@ -185,5 +185,5 @@ jobs:
 
             - ফোনে ইনস্টল করতে নিচের `FarmSim.apk` ফাইলটা ডাউনলোড করুন
             - Android 7.0+ (ARM64), ল্যান্ডস্কেপ, বাংলা/English UI
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
