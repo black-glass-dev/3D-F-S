@@ -3,7 +3,7 @@ name: Build Android APK
 # কখন বিল্ড হবে:
 #  - ম্যানুয়ালি (Actions ট্যাব → Run workflow)
 #  - main ব্রাঞ্চে push হলে
-#  - build- দিয়ে শুরু হওয়া ট্যাগ push হলে (অটো-ট্রিগার)
+#  - build- দিয়ে শুরু হওয়া ট্যাগ push হলে
 on:
   workflow_dispatch:
   push:
@@ -16,48 +16,61 @@ jobs:
   build:
     name: Build Android APK (Unity)
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       # 1) কোড চেকআউট
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           lfs: true
 
-      # 2) Unity Library ক্যাশ — পরের বিল্ডগুলো দ্রুত হবে
-      - name: Cache Unity Library
-        uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-Android-
-
-      # 3) ডিস্ক স্পেস খালি করা (Unity Android বিল্ডের জন্য ২০+ GB লাগে)
+      # 2) ডিস্ক স্পেস খালি করা (Unity + Android মডিউলের জন্য জায়গা দরকার)
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
           sudo docker image prune --all --force || true
           df -h /
 
-      # 4) Unity লাইসেন্স চালু + APK বিল্ড
-      #    দরকারি Secrets (Repo Settings > Secrets and variables > Actions):
+      # 3) Unity 2022.3 ইনস্টল (Android বিল্ড সাপোর্টসহ) — ProjectVersion.txt থেকে ভার্সন নেয়
+      - name: Install Unity 2022.3 + Android module
+        id: unity
+        uses: buildalon/unity-setup@v3
+        with:
+          version-file: 'ProjectSettings/ProjectVersion.txt'
+          build-targets: Android
+          cache-installation: true
+
+      # 4) Unity Personal (ফ্রি) লাইসেন্স অনলাইনে চালু
+      #    দরকারি Secrets (Settings > Secrets and variables > Actions):
       #      UNITY_EMAIL    — Unity অ্যাকাউন্টের ইমেইল
       #      UNITY_PASSWORD — Unity অ্যাকাউন্টের পাসওয়ার্ড
-      #    (Unity Personal = ফ্রি অ্যাকাউন্টেই কাজ করবে)
-      - name: Build Android APK with Unity
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      #    কোনো .alf/.ulf ফাইল লাগে না।
+      - name: Activate Unity Personal license
+        uses: buildalon/activate-unity-license@v3
         with:
-          targetPlatform: Android
-          buildMethod: FarmSim.Editor.CiBuild.PerformBuild
-          androidExportType: androidPackage
-          allowDirtyBuild: true
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
 
-      # 5) APK আপলোড — Actions রান পেজ থেকে ডাউনলোড করা যাবে (30 দিন থাকবে)
+      # 5) APK বিল্ড
+      - name: Build APK
+        run: |
+          set -o pipefail
+          "$UNITY_EDITOR_PATH" \
+            -batchmode \
+            -nographics \
+            -quit \
+            -projectPath "$GITHUB_WORKSPACE" \
+            -executeMethod FarmSim.Editor.CiBuild.PerformBuild \
+            -logFile -
+
+      # 6) APK তৈরি হয়েছে কিনা যাচাই
+      - name: Verify APK exists
+        run: |
+          ls -lh build/Android/ || true
+          test -f build/Android/FarmSim.apk
+
+      # 7) APK আপলোড — Actions রান পেজ থেকে ডাউনলোড করা যাবে (30 দিন থাকবে)
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
