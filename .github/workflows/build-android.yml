@@ -1,0 +1,61 @@
+name: Build Android APK
+
+# কখন বিল্ড হবে: ম্যানুয়ালি (Actions ট্যাব থেকে) অথবা main ব্রাঞ্চে push হলে
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Android APK (Unity)
+    runs-on: ubuntu-latest
+    steps:
+      # 1) কোড চেকআউট
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      # 2) Unity Library ক্যাশ — পরের বিল্ডগুলো দ্রুত হবে
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Android-
+
+      # 3) ডিস্ক স্পেস খালি করা (Unity Android বিল্ডের জন্য লাগে)
+      - name: Free disk space
+        uses: jlumbroso/free-disk-[email protected]
+
+      # 4) Unity দিয়ে APK বিল্ড
+      #    দরকারি Secrets (Repo Settings > Secrets and variables > Actions):
+      #      UNITY_LICENSE  — .ulf লাইসেন্স ফাইলের পুরো কনটেন্ট
+      #      UNITY_EMAIL    — Unity অ্যাকাউন্টের ইমেইল
+      #      UNITY_PASSWORD — Unity অ্যাকাউন্টের পাসওয়ার্ড
+      #    কীভাবে পাবেন: README.md-এর "GitHub Secrets সেটআপ" অংশ দেখুন।
+      - name: Build Android APK with Unity
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          targetPlatform: Android
+          buildMethod: FarmSim.Editor.CiBuild.PerformBuild
+          androidExportType: androidPackage
+          allowDirtyBuild: true
+
+      # 5) APK আপলোড — Actions রান পেজ থেকে ডাউনলোড করা যাবে (30 দিন থাকবে)
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FarmSim-Android-APK
+          path: build/Android/FarmSim.apk
+          if-no-files-found: error
+          retention-days: 30

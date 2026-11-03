@@ -1,0 +1,27 @@
+name: Unity License Activation (One-Time)
+
+# এই workflow টা শুধু ONE-TIME লাইসেন্স সেটআপের জন্য।
+# চালালে একটা .alf ফাইল পাওয়া যাবে, সেটা license.unity3d.com-এ আপলোড করে
+# .ulf ফাইল পাবেন — ওই .ulf-এর কনটেন্ট UNITY_LICENSE Secret হিসেবে বসাতে হবে।
+# বিস্তারিত: README.md-এর "GitHub Secrets সেটআপ" অংশ।
+
+on:
+  workflow_dispatch:
+
+jobs:
+  activation:
+    name: Request Unity activation file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request activation file (.alf)
+        id: getManualLicenseFile
+        uses: game-ci/unity-request-activation-file@v2
+        with:
+          unityVersion: 2022.3.45f1
+
+      - name: Upload .alf file
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.getManualLicenseFile.outputs.filePath }}
+          path: ${{ steps.getManualLicenseFile.outputs.filePath }}
+          retention-days: 7
