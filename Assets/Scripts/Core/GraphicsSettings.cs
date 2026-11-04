@@ -87,8 +87,8 @@ namespace FarmSim
         }
 
         /// <summary>Quality of the colour grade (lower tiers get a gentler look).</summary>
-        public static float GradeSaturation => Current == Tier.High ? 1.14f : 1.07f;
+        public static float GradeSaturation => Current == Tier.High ? 0.88f : 0.93f;
 
-        public static float GradeContrast => Current == Tier.High ? 1.10f : 1.05f;
+        public static float GradeContrast => Current == Tier.High ? 1.10f : 1.06f;
     }
 }

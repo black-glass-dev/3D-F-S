@@ -2,52 +2,69 @@ using UnityEngine;
 
 namespace FarmSim
 {
-    /// <summary>Cheap colour grading pass (contrast, saturation, warmth, vignette).</summary>
+    /// <summary>
+    /// Cinematic colour grade in a single full-screen pass: exposure, filmic
+    /// tonemap, contrast, desaturation, split tone, black lift, vignette and
+    /// grain. Values are set by GameBootstrap per quality tier.
+    /// </summary>
     [RequireComponent(typeof(Camera))]
     public class PostFx : MonoBehaviour
     {
-        public float Saturation = 1.14f;
+        [Header("Exposure & tone")]
+        public float Exposure = 1.02f;
+        [Range(0f, 1f)] public float ToneStrength = 0.85f;
         public float Contrast = 1.10f;
-        public float Brightness = -0.015f;
-        public float Warmth = 0.55f;
+        [Range(0f, 1.5f)] public float Saturation = 0.90f;
+        [Range(0f, 0.2f)] public float Lift = 0.03f;
+
+        [Header("Colour & finish")]
+        public float Warmth = 0.7f;
         public float Vignette = 0.62f;
-        public float ShadowLift = 0.55f;
+        public float Grain = 0.012f;
 
         private Material _material;
-        private bool _supported;
+        private static readonly int ExposureId = Shader.PropertyToID("_Exposure");
+        private static readonly int ToneId = Shader.PropertyToID("_ToneStrength");
+        private static readonly int ContrastId = Shader.PropertyToID("_Contrast");
+        private static readonly int SaturationId = Shader.PropertyToID("_Saturation");
+        private static readonly int LiftId = Shader.PropertyToID("_Lift");
+        private static readonly int VignetteId = Shader.PropertyToID("_Vignette");
+        private static readonly int WarmthId = Shader.PropertyToID("_Warmth");
+        private static readonly int GrainId = Shader.PropertyToID("_Grain");
 
         private void Awake()
         {
             var shader = Resources.Load<Shader>("Shaders/FarmPost");
+            if (shader == null) shader = Shader.Find("FarmSim/PostFx");
             if (shader != null && shader.isSupported)
             {
-                _material = new Material(shader);
-                _material.hideFlags = HideFlags.HideAndDontSave;
-                _supported = true;
+                _material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
             }
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (!_supported || _material == null)
+            if (_material == null)
             {
                 Graphics.Blit(source, destination);
                 return;
             }
 
-            _material.SetFloat("_Saturation", Saturation);
-            _material.SetFloat("_Contrast", Contrast);
-            _material.SetFloat("_Brightness", Brightness);
-            _material.SetFloat("_Warmth", Warmth);
-            _material.SetFloat("_Vignette", Vignette);
-            _material.SetFloat("_ShadowLift", ShadowLift);
+            _material.SetFloat(ExposureId, Exposure);
+            _material.SetFloat(ToneId, ToneStrength);
+            _material.SetFloat(ContrastId, Contrast);
+            _material.SetFloat(SaturationId, Saturation);
+            _material.SetFloat(LiftId, Lift);
+            _material.SetFloat(VignetteId, Vignette);
+            _material.SetFloat(WarmthId, Warmth);
+            _material.SetFloat(GrainId, Grain);
+
             Graphics.Blit(source, destination, _material);
         }
 
         private void OnDestroy()
         {
-            if (_material != null)
-                DestroyImmediate(_material);
+            if (_material != null) DestroyImmediate(_material);
         }
     }
 }

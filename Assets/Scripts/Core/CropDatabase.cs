@@ -28,22 +28,22 @@ namespace FarmSim
             {
                 Id = "wheat", NameKey = "wheat",
                 GrowSeconds = 15f, SeedCost = 5, SellPrice = 14,
-                SproutColor = new Color(0.45f, 0.85f, 0.35f),
-                RipeColor = new Color(0.95f, 0.78f, 0.25f)
+                SproutColor = new Color(0.42f, 0.56f, 0.32f),
+                RipeColor = new Color(0.82f, 0.66f, 0.30f)
             },
             new CropDef
             {
                 Id = "tomato", NameKey = "tomato",
                 GrowSeconds = 30f, SeedCost = 12, SellPrice = 34,
-                SproutColor = new Color(0.30f, 0.75f, 0.30f),
-                RipeColor = new Color(0.90f, 0.22f, 0.18f)
+                SproutColor = new Color(0.34f, 0.48f, 0.28f),
+                RipeColor = new Color(0.70f, 0.24f, 0.19f)
             },
             new CropDef
             {
                 Id = "pumpkin", NameKey = "pumpkin",
                 GrowSeconds = 50f, SeedCost = 25, SellPrice = 75,
-                SproutColor = new Color(0.35f, 0.70f, 0.25f),
-                RipeColor = new Color(0.95f, 0.50f, 0.10f)
+                SproutColor = new Color(0.36f, 0.50f, 0.26f),
+                RipeColor = new Color(0.80f, 0.46f, 0.16f)
             },
         };
 

@@ -1,5 +1,11 @@
 // FarmSim/Lit — the game's main material shader.
-// It lives in Assets/Resources/ so Unity ALWAYS packs it into the APK.
+//
+// v1.0.4 look: stock Lambert lighting (zero shader risk, fast on phones),
+// a cool fill light in the scene for a soft terminator, and optional
+// per-vertex tint used by the terrain for baked colour variation +
+// contact darkening.
+//
+// It lives in Assets/Resources so Unity ALWAYS packs it into the APK.
 // (Shader.Find("Standard") returns null in a player build when nothing
 // references it, which is what caused the pink/magenta screen in v1.0.0.)
 Shader "FarmSim/Lit"
@@ -9,12 +15,13 @@ Shader "FarmSim/Lit"
         _Color ("Color", Color) = (1,1,1,1)
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
         _Smoothness ("Smoothness", Range(0,1)) = 0.05
+        _VertexTint ("Use Vertex Tint", Range(0,1)) = 0
     }
 
     SubShader
     {
         Tags { "RenderType"="Opaque" }
-        LOD 150
+        LOD 200
 
         CGPROGRAM
         #pragma surface surf Lambert addshadow fullforwardshadows
@@ -22,18 +29,22 @@ Shader "FarmSim/Lit"
 
         sampler2D _MainTex;
         fixed4 _Color;
+        float _VertexTint;
 
         struct Input
         {
             float2 uv_MainTex;
+            float4 color : COLOR;
         };
 
         void surf (Input IN, inout SurfaceOutput o)
         {
             fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
-            o.Albedo = c.rgb;
+            float tint = lerp(1.0, IN.color.r, _VertexTint);
+            o.Albedo = c.rgb * tint;
             o.Alpha = c.a;
         }
+
         ENDCG
     }
 

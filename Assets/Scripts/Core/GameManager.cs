@@ -32,12 +32,13 @@ namespace FarmSim
         private Material _skyMaterial;
         private float _autoSaveTimer;
 
-        private static readonly Color SkyTopDawn = new Color(0.46f, 0.44f, 0.74f);
-        private static readonly Color SkyTopDay = new Color(0.28f, 0.54f, 0.92f);
-        private static readonly Color SkyTopDusk = new Color(0.28f, 0.26f, 0.52f);
-        private static readonly Color SkyBottomDawn = new Color(0.99f, 0.74f, 0.52f);
-        private static readonly Color SkyBottomDay = new Color(0.74f, 0.86f, 0.96f);
-        private static readonly Color SkyBottomDusk = new Color(0.97f, 0.55f, 0.38f);
+        // Muted, filmic sky palette (v1.0.3) — no candy colours.
+        private static readonly Color SkyTopDawn = new Color(0.34f, 0.33f, 0.46f);
+        private static readonly Color SkyTopDay = new Color(0.30f, 0.44f, 0.62f);
+        private static readonly Color SkyTopDusk = new Color(0.28f, 0.25f, 0.36f);
+        private static readonly Color SkyBottomDawn = new Color(0.86f, 0.62f, 0.46f);
+        private static readonly Color SkyBottomDay = new Color(0.74f, 0.78f, 0.78f);
+        private static readonly Color SkyBottomDusk = new Color(0.74f, 0.44f, 0.34f);
 
         private void Awake()
         {
@@ -131,13 +132,13 @@ namespace FarmSim
             }
 
             RenderSettings.ambientLight = Color.Lerp(
-                new Color(0.38f, 0.36f, 0.44f),
-                new Color(0.56f, 0.58f, 0.55f),
+                new Color(0.32f, 0.31f, 0.38f),
+                new Color(0.42f, 0.46f, 0.52f),
                 daylight);
 
             RenderSettings.fogColor = Color.Lerp(
-                new Color(0.50f, 0.44f, 0.52f),
-                new Color(0.75f, 0.83f, 0.89f),
+                new Color(0.40f, 0.36f, 0.42f),
+                new Color(0.70f, 0.75f, 0.78f),
                 daylight);
 
             if (_sun != null)
@@ -146,10 +147,10 @@ namespace FarmSim
                 _sun.transform.rotation = Quaternion.Euler(angle, 40f, 0f);
                 // Exposure is deliberately conservative: 1.25 blew the
                 // path and pond out to white in v1.0.1.
-                _sun.intensity = Mathf.Lerp(0.42f, 1.00f, daylight);
+                _sun.intensity = Mathf.Lerp(0.34f, 0.95f, daylight);
                 _sun.color = Color.Lerp(
-                    new Color(1f, 0.70f, 0.50f),
-                    new Color(1f, 0.965f, 0.90f),
+                    new Color(1f, 0.66f, 0.44f),
+                    new Color(1f, 0.95f, 0.87f),
                     daylight);
             }
         }
