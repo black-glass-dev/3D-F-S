@@ -101,6 +101,18 @@ namespace FarmSim
             // Lower sun = longer, softer shadows (cinematic late-morning light)
             sunGo.transform.rotation = Quaternion.Euler(38f, 34f, 0f);
             RenderSettings.sun = sun;
+
+            // Cool fill light from the opposite side: softens the Lambert
+            // terminator and lifts shadows without a custom lighting model.
+            var fillGo = new GameObject("FillLight");
+            var fill = fillGo.AddComponent<Light>();
+            fill.type = LightType.Directional;
+            fill.color = new Color(0.58f, 0.70f, 0.86f);
+            fill.intensity = 0.30f;
+            fill.shadows = LightShadows.None;
+            fill.renderMode = LightRenderMode.ForceVertex;
+            fillGo.transform.rotation = Quaternion.Euler(22f, 214f, 0f);
+
             return sun;
         }
 
