@@ -3,82 +3,131 @@ using UnityEngine;
 namespace FarmSim
 {
     /// <summary>
-    /// Fixed-angle isometric camera for mobile: drag to pan, pinch / wheel to zoom.
-    /// The angle never rotates — that is what makes this 2.5D and touch-friendly.
+    /// Fixed-angle isometric camera for mobile: drag to pan, pinch to zoom,
+    /// double tap to reset. The angle never rotates — that is what makes the
+    /// game 2.5D and keeps touch panning predictable.
     /// </summary>
     public class CameraController : MonoBehaviour
     {
-        public Vector3 Focus = Vector3.zero;
-        public float OrthoSize = 6.5f;
-
-        private const float MinSize = 3.5f;
-        private const float MaxSize = 12f;
-        private const float PanLimit = 9f;
+        private static readonly Vector3 ViewOffset = new Vector3(18f, 18f, -18f);
 
         private Camera _cam;
-        private Vector3 _lastMousePos;
-        private bool _dragging;
-        private float _lastPinchDistance;
 
-        private void Awake()
+        private Vector3 _focus;
+        private Vector3 _targetFocus;
+        private float _size = 7f;
+        private float _targetSize = 7f;
+
+        private Vector3 _defaultFocus = Vector3.zero;
+        private float _defaultSize = 7f;
+
+        private float _minSize = 4f;
+        private float _maxSize = 11f;
+        private Vector2 _xRange = new Vector2(-8f, 8f);
+        private Vector2 _zRange = new Vector2(-7f, 7f);
+
+        private bool _dragging;
+        private Vector3 _lastMousePos;
+        private float _lastPinchDistance;
+        private float _lastTapTime = -1f;
+        private Vector3 _lastTapPosition;
+
+        public void Init(Vector3 focus, float size, Vector2 xRange, Vector2 zRange)
         {
             _cam = GetComponent<Camera>();
+            _defaultFocus = focus;
+            _defaultSize = size;
+            _xRange = Normalize(xRange);
+            _zRange = Normalize(zRange);
+
+            _focus = focus;
+            _targetFocus = focus;
+            _size = size;
+            _targetSize = size;
+            _minSize = Mathf.Max(3f, size * 0.55f);
+            _maxSize = size * 1.7f;
+
             ApplyTransform();
+        }
+
+        private static Vector2 Normalize(Vector2 range)
+        {
+            if (range.x > range.y)
+                return new Vector2(range.y, range.x);
+            return range;
         }
 
         private void Update()
         {
             HandleTouch();
             HandleMouse();
-            OrthoSize = Mathf.Clamp(OrthoSize, MinSize, MaxSize);
-            Focus.x = Mathf.Clamp(Focus.x, -PanLimit, PanLimit);
-            Focus.z = Mathf.Clamp(Focus.z, -PanLimit, PanLimit);
+
+            _focus = Vector3.Lerp(_focus, _targetFocus, Time.deltaTime * 9f);
+            _size = Mathf.Lerp(_size, _targetSize, Time.deltaTime * 9f);
             ApplyTransform();
         }
 
         private void ApplyTransform()
         {
-            // Classic isometric direction: equal parts x/y, looking back along -z
-            var offset = new Vector3(18f, 18f, -18f);
-            transform.position = Focus + offset;
-            transform.LookAt(Focus);
+            transform.position = _focus + ViewOffset;
+            transform.LookAt(_focus);
             if (_cam != null)
             {
                 _cam.orthographic = true;
-                _cam.orthographicSize = OrthoSize;
+                _cam.orthographicSize = _size;
             }
         }
 
         private void PanByScreenDelta(Vector2 deltaPixels)
         {
             if (_cam == null) return;
-            float worldPerPixel = (OrthoSize * 2f) / Mathf.Max(1f, Screen.height);
+            float worldPerPixel = (_size * 2f) / Mathf.Max(1f, Screen.height);
+
             var right = transform.right;
             right.y = 0f;
             right.Normalize();
+
             var forward = transform.forward;
             forward.y = 0f;
             forward.Normalize();
-            Focus -= (right * deltaPixels.x + forward * deltaPixels.y) * worldPerPixel;
+
+            Vector3 move = -(right * deltaPixels.x + forward * deltaPixels.y) * worldPerPixel;
+            _targetFocus += move;
+            _targetFocus.x = Mathf.Clamp(_targetFocus.x, _xRange.x, _xRange.y);
+            _targetFocus.z = Mathf.Clamp(_targetFocus.z, _zRange.x, _zRange.y);
+            _targetFocus.y = 0f;
         }
 
         private void HandleTouch()
         {
             if (Input.touchCount == 1)
             {
-                var t = Input.GetTouch(0);
-                if (t.phase == TouchPhase.Moved)
-                    PanByScreenDelta(t.deltaPosition);
+                var touch = Input.GetTouch(0);
+                if (touch.phase == TouchPhase.Began)
+                {
+                    RegisterTapCandidate(touch.position);
+                }
+                else if (touch.phase == TouchPhase.Moved)
+                {
+                    PanByScreenDelta(touch.deltaPosition);
+                }
                 _lastPinchDistance = 0f;
             }
             else if (Input.touchCount == 2)
             {
                 var a = Input.GetTouch(0);
                 var b = Input.GetTouch(1);
-                float dist = Vector2.Distance(a.position, b.position);
+                float distance = Vector2.Distance(a.position, b.position);
                 if (_lastPinchDistance > 0f)
-                    OrthoSize += (_lastPinchDistance - dist) * 0.01f;
-                _lastPinchDistance = dist;
+                {
+                    _targetSize = Mathf.Clamp(_targetSize + (_lastPinchDistance - distance) * 0.012f,
+                        _minSize, _maxSize);
+                }
+                _lastPinchDistance = distance;
+            }
+            else
+            {
+                _lastPinchDistance = 0f;
             }
         }
 
@@ -88,13 +137,15 @@ namespace FarmSim
 
             float wheel = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(wheel) > 0.001f)
-                OrthoSize -= wheel * 2f;
+                _targetSize = Mathf.Clamp(_targetSize - wheel * 2.4f, _minSize, _maxSize);
 
             if (Input.GetMouseButtonDown(0))
             {
                 _dragging = true;
                 _lastMousePos = Input.mousePosition;
+                RegisterTapCandidate(Input.mousePosition);
             }
+
             if (Input.GetMouseButtonUp(0))
                 _dragging = false;
 
@@ -106,10 +157,22 @@ namespace FarmSim
             }
         }
 
-        /// <summary>True while the player is panning (used to tell a tap from a drag).</summary>
-        public bool IsDraggingFar(Vector3 downPos, Vector3 upPos)
+        private void RegisterTapCandidate(Vector3 screenPosition)
         {
-            return Vector3.Distance(downPos, upPos) > 18f;
+            bool isDoubleTap = Time.unscaledTime - _lastTapTime < 0.32f &&
+                               Vector3.Distance(screenPosition, _lastTapPosition) < 60f;
+
+            if (isDoubleTap)
+                ResetView();
+
+            _lastTapTime = Time.unscaledTime;
+            _lastTapPosition = screenPosition;
+        }
+
+        public void ResetView()
+        {
+            _targetFocus = _defaultFocus;
+            _targetSize = _defaultSize;
         }
     }
 }

@@ -3,13 +3,14 @@ name: Build Android APK
 # কখন বিল্ড হবে:
 #  - ম্যানুয়ালি (Actions ট্যাব → Run workflow)
 #  - main ব্রাঞ্চে push হলে
-#  - build- দিয়ে শুরু হওয়া ট্যাগ push হলে
+#  - v দিয়ে শুরু হওয়া ট্যাগ push হলে (যেমন v1.0.1) — Releases পেজে APK যুক্ত হবে
 on:
   workflow_dispatch:
   push:
     branches:
       - main
     tags:
+      - 'v*'
       - 'build-*'
 
 jobs:
@@ -163,27 +164,44 @@ jobs:
           ls -lh build/Android/ || true
           test -f build/Android/FarmSim.apk
 
+      # 6.5) APK-র নামে ভার্সন বসানো (Releases পেজে সহজে চেনা যায়)
+      - name: Name the APK with its version
+        shell: bash
+        run: |
+          set +e
+          TAG="${{ github.ref_name }}"
+          case "$TAG" in
+            v*) VERSION="$TAG" ;;
+            *)  VERSION="dev" ;;
+          esac
+          OUT="build/Android/FarmSim-${VERSION}.apk"
+          cp build/Android/FarmSim.apk "$OUT"
+          echo "APK_OUT=$OUT" >> "$GITHUB_ENV"
+          ls -lh build/Android/
+
       # 7) APK আপলোড — Actions রান পেজ থেকে ডাউনলোড করা যাবে (30 দিন থাকবে)
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: FarmSim-Android-APK
-          path: build/Android/FarmSim.apk
+          path: build/Android/*.apk
           if-no-files-found: error
           retention-days: 30
 
       # 8) build-* ট্যাগ হলে APK-টা GitHub Release-এ সরাসরি যুক্ত হয় (এক ক্লিকে ডাউনলোড)
       - name: Publish APK as a Release asset
-        if: startsWith(github.ref, 'refs/tags/build-')
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/Android/FarmSim.apk
-          name: Farm Simulator — ${{ github.ref_name }}
+          files: ${{ env.APK_OUT }}
+          name: Farm Simulator ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
           body: |
-            🌾 3D Farm Simulator (Unity 2.5D isometric) — Android APK
+            🌾 3D Farm Simulator (Unity 2.5D isometric) — Android APK ${{ github.ref_name }}
 
-            - ফোনে ইনস্টল করতে নিচের `FarmSim.apk` ফাইলটা ডাউনলোড করুন
-            - Android 7.0+ (ARM64), ল্যান্ডস্কেপ, বাংলা/English UI
+            **ইনস্টল:** নিচের `FarmSim-${{ github.ref_name }}.apk` ফাইলটা ডাউনলোড করে ফোনে ইনস্টল করুন।
+            Android 7.0+ (ARM64) · ল্যান্ডস্কেপ · বাংলা/English UI
+
+            বিস্তারিত পরিবর্তন: [CHANGELOG.md](https://github.com/islamyousuf032-glitch/3D-F-S/blob/main/CHANGELOG.md)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -18,6 +18,8 @@ namespace FarmSim
         public int Coins = 100;
         public int Day = 1;
         public int SelectedCrop = 0;
+        public int TotalHarvests = 0;
+        public float DayTime = 0f;
         public List<PlotSaveData> Plots = new List<PlotSaveData>();
     }
 
@@ -28,6 +30,7 @@ namespace FarmSim
 
         public static void Save(GameSaveData data)
         {
+            if (data == null) return;
             PlayerPrefs.SetString(Key, JsonUtility.ToJson(data));
             PlayerPrefs.Save();
         }
@@ -49,6 +52,7 @@ namespace FarmSim
         public static void DeleteSave()
         {
             PlayerPrefs.DeleteKey(Key);
+            PlayerPrefs.Save();
         }
     }
 }
