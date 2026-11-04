@@ -21,6 +21,7 @@ namespace FarmSim.Editor
     {
         private const string ScenePath = "Assets/Scenes/Main.unity";
         private const string ApkPath = "build/Android/FarmSim.apk";
+        private const string VERSION = "1.0.1";
 
         [MenuItem("FarmSim/Build Android APK (CI)")]
         public static void PerformBuild()
@@ -77,7 +78,7 @@ namespace FarmSim.Editor
         {
             PlayerSettings.companyName = "FarmSimStudio";
             PlayerSettings.productName = "3D Farm Simulator";
-            PlayerSettings.bundleVersion = "1.0.0";
+            PlayerSettings.bundleVersion = VERSION;
 
             PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.farmsim.threedgame");
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
@@ -87,6 +88,9 @@ namespace FarmSim.Editor
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
 
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+            PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+            // Shrink the APK a little; the game uses no reflection-based APIs.
+            PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Low);
             // 64-bit ARM requires IL2CPP (Mono only supports 32-bit ARM on Android).
             // IL2CPP is also what Google Play demands for new uploads.
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
