@@ -29,7 +29,9 @@ namespace FarmSim
         private static readonly Dictionary<int, Material> Cache = new Dictionary<int, Material>();
         private static Shader _lit;
         private static Shader _unlit;
+        private static Shader _foliage;
         private static Material _particle;
+        private static Material _tuftMaterial;
 
         public static Shader LitShader
         {
@@ -47,6 +49,16 @@ namespace FarmSim
                 if (_unlit == null)
                     _unlit = LoadShader("Shaders/FarmParticle", "FarmSim/Particle", "Unlit/Color");
                 return _unlit;
+            }
+        }
+
+        public static Shader FoliageShader
+        {
+            get
+            {
+                if (_foliage == null)
+                    _foliage = LoadShader("Shaders/FarmFoliage", "FarmSim/Foliage", "Sprites/Default");
+                return _foliage;
             }
         }
 
@@ -86,6 +98,23 @@ namespace FarmSim
                 mat.SetTexture("_MainTex", TextureFactory.Get(pattern));
             Cache[key] = mat;
             return mat;
+        }
+
+        /// <summary>Alpha-cut grass tuft material (shared by every tuft).</summary>
+        public static Material TuftMaterial
+        {
+            get
+            {
+                if (_tuftMaterial != null) return _tuftMaterial;
+                _tuftMaterial = new Material(FoliageShader);
+                _tuftMaterial.name = "FarmTuftMat";
+                _tuftMaterial.mainTexture = TextureFactory.Tuft;
+                if (_tuftMaterial.HasProperty("_Color"))
+                    _tuftMaterial.SetColor("_Color", new Color(0.54f, 0.80f, 0.40f));
+                if (_tuftMaterial.HasProperty("_Cutoff"))
+                    _tuftMaterial.SetFloat("_Cutoff", 0.4f);
+                return _tuftMaterial;
+            }
         }
 
         /// <summary>Shared material for particles (unlit, tinted per particle).</summary>

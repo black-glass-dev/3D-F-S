@@ -33,10 +33,10 @@ namespace FarmSim
         private float _autoSaveTimer;
 
         private static readonly Color SkyTopDawn = new Color(0.46f, 0.44f, 0.74f);
-        private static readonly Color SkyTopDay = new Color(0.30f, 0.58f, 0.94f);
+        private static readonly Color SkyTopDay = new Color(0.28f, 0.54f, 0.92f);
         private static readonly Color SkyTopDusk = new Color(0.28f, 0.26f, 0.52f);
         private static readonly Color SkyBottomDawn = new Color(0.99f, 0.74f, 0.52f);
-        private static readonly Color SkyBottomDay = new Color(0.82f, 0.91f, 0.99f);
+        private static readonly Color SkyBottomDay = new Color(0.74f, 0.86f, 0.96f);
         private static readonly Color SkyBottomDusk = new Color(0.97f, 0.55f, 0.38f);
 
         private void Awake()
@@ -50,6 +50,8 @@ namespace FarmSim
             Coins = 100;
             Day = 1;
             SelectedCropIndex = 0;
+            // Start mid-morning: the first frame should already look sunny.
+            TimeInDay = DayLengthSeconds * 0.16f;
         }
 
         public void Init(FarmGrid grid, Light sun)
@@ -129,23 +131,25 @@ namespace FarmSim
             }
 
             RenderSettings.ambientLight = Color.Lerp(
-                new Color(0.46f, 0.42f, 0.48f),
-                new Color(0.74f, 0.74f, 0.70f),
+                new Color(0.38f, 0.36f, 0.44f),
+                new Color(0.56f, 0.58f, 0.55f),
                 daylight);
 
             RenderSettings.fogColor = Color.Lerp(
-                new Color(0.55f, 0.48f, 0.55f),
-                new Color(0.80f, 0.88f, 0.93f),
+                new Color(0.50f, 0.44f, 0.52f),
+                new Color(0.75f, 0.83f, 0.89f),
                 daylight);
 
             if (_sun != null)
             {
                 float angle = Mathf.Lerp(18f, 152f, t);
                 _sun.transform.rotation = Quaternion.Euler(angle, 40f, 0f);
-                _sun.intensity = Mathf.Lerp(0.55f, 1.25f, daylight);
+                // Exposure is deliberately conservative: 1.25 blew the
+                // path and pond out to white in v1.0.1.
+                _sun.intensity = Mathf.Lerp(0.42f, 1.00f, daylight);
                 _sun.color = Color.Lerp(
-                    new Color(1f, 0.72f, 0.52f),
-                    new Color(1f, 0.98f, 0.92f),
+                    new Color(1f, 0.70f, 0.50f),
+                    new Color(1f, 0.965f, 0.90f),
                     daylight);
             }
         }
@@ -160,7 +164,7 @@ namespace FarmSim
 
         public void NextDay()
         {
-            TimeInDay = 0f;
+            TimeInDay = DayLengthSeconds * 0.10f;
             Day++;
             if (_grid != null)
                 _grid.OnNewDay();

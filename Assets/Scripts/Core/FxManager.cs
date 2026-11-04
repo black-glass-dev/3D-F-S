@@ -88,7 +88,7 @@ namespace FarmSim
 
             var renderer = ps.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
-            renderer.material = _particleMaterial;
+            renderer.sharedMaterial = _particleMaterial;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
 
@@ -115,7 +115,7 @@ namespace FarmSim
             var meshRenderer = go.GetComponent<MeshRenderer>();
             if (text.font != null)
             {
-                meshRenderer.material = text.font.material;
+                meshRenderer.sharedMaterial = text.font.material;
                 meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 meshRenderer.receiveShadows = false;
             }

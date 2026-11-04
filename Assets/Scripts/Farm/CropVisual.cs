@@ -66,7 +66,7 @@ namespace FarmSim
                 stem.transform.localRotation = Quaternion.Euler(Random.Range(-6f, 6f), Random.Range(0f, 360f), Random.Range(-6f, 6f));
                 Object.Destroy(stem.GetComponent<Collider>());
                 var stemRenderer = stem.GetComponent<Renderer>();
-                stemRenderer.material = MaterialCache.Get(greenDark, SurfacePattern.Leaf);
+                stemRenderer.sharedMaterial = MaterialCache.Get(greenDark, SurfacePattern.Leaf);
                 _leaves.Add(stemRenderer);
 
                 // grain head (ripens to gold)
@@ -77,7 +77,7 @@ namespace FarmSim
                 head.transform.localScale = new Vector3(0.09f, 0.16f, 0.09f);
                 Object.Destroy(head.GetComponent<Collider>());
                 var headRenderer = head.GetComponent<Renderer>();
-                headRenderer.material = MaterialCache.Get(green, SurfacePattern.Leaf);
+                headRenderer.sharedMaterial = MaterialCache.Get(green, SurfacePattern.Leaf);
                 _leaves.Add(headRenderer);
                 _fruits.Add(head.transform);
                 _fruitRenderers.Add(headRenderer);
@@ -96,7 +96,7 @@ namespace FarmSim
             bush.transform.localScale = new Vector3(0.62f, 0.5f, 0.62f);
             Object.Destroy(bush.GetComponent<Collider>());
             var bushRenderer = bush.GetComponent<Renderer>();
-            bushRenderer.material = MaterialCache.Get(leaf, SurfacePattern.Leaf);
+            bushRenderer.sharedMaterial = MaterialCache.Get(leaf, SurfacePattern.Leaf);
             _leaves.Add(bushRenderer);
 
             var bushTop = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -106,7 +106,7 @@ namespace FarmSim
             bushTop.transform.localScale = new Vector3(0.42f, 0.36f, 0.42f);
             Object.Destroy(bushTop.GetComponent<Collider>());
             var bushTopRenderer = bushTop.GetComponent<Renderer>();
-            bushTopRenderer.material = MaterialCache.Get(leafLight, SurfacePattern.Leaf);
+            bushTopRenderer.sharedMaterial = MaterialCache.Get(leafLight, SurfacePattern.Leaf);
             _leaves.Add(bushTopRenderer);
 
             var offsets = new[]
@@ -125,7 +125,7 @@ namespace FarmSim
                 tomato.transform.localScale = Vector3.one * 0.17f;
                 Object.Destroy(tomato.GetComponent<Collider>());
                 var renderer = tomato.GetComponent<Renderer>();
-                renderer.material = MaterialCache.Get(CropDatabase.Get(_cropIndex).RipeColor);
+                renderer.sharedMaterial = MaterialCache.Get(CropDatabase.Get(_cropIndex).RipeColor);
                 _fruits.Add(tomato.transform);
                 _fruitRenderers.Add(renderer);
             }
@@ -147,7 +147,7 @@ namespace FarmSim
                 leafBall.transform.localScale = new Vector3(0.34f, 0.16f, 0.34f);
                 Object.Destroy(leafBall.GetComponent<Collider>());
                 var renderer = leafBall.GetComponent<Renderer>();
-                renderer.material = MaterialCache.Get(leaf, SurfacePattern.Leaf);
+                renderer.sharedMaterial = MaterialCache.Get(leaf, SurfacePattern.Leaf);
                 _leaves.Add(renderer);
             }
 
@@ -166,7 +166,7 @@ namespace FarmSim
                 pumpkin.transform.localScale = new Vector3(0.3f, 0.22f, 0.3f);
                 Object.Destroy(pumpkin.GetComponent<Collider>());
                 var renderer = pumpkin.GetComponent<Renderer>();
-                renderer.material = MaterialCache.Get(CropDatabase.Get(_cropIndex).RipeColor);
+                renderer.sharedMaterial = MaterialCache.Get(CropDatabase.Get(_cropIndex).RipeColor);
                 _fruits.Add(pumpkin.transform);
                 _fruitRenderers.Add(renderer);
             }
@@ -200,7 +200,7 @@ namespace FarmSim
                 if (renderer != null)
                 {
                     var color = ripe ? crop.RipeColor : Color.Lerp(crop.SproutColor, crop.RipeColor, fruitT * 0.5f);
-                    renderer.material = MaterialCache.Get(color);
+                    renderer.sharedMaterial = MaterialCache.Get(color);
                 }
             }
 
