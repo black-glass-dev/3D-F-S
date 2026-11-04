@@ -67,21 +67,23 @@ namespace FarmSim
             {
                 var sky = new Material(skyShader) { name = "FarmSky" };
                 if (sky.HasProperty("_TopColor"))
-                    sky.SetColor("_TopColor", new Color(0.28f, 0.53f, 0.90f));
+                    sky.SetColor("_TopColor", new Color(0.30f, 0.44f, 0.62f));
                 if (sky.HasProperty("_BottomColor"))
-                    sky.SetColor("_BottomColor", new Color(0.72f, 0.85f, 0.95f));
+                    sky.SetColor("_BottomColor", new Color(0.74f, 0.78f, 0.78f));
+                if (sky.HasProperty("_Exponent"))
+                    sky.SetFloat("_Exponent", 1.2f);
                 RenderSettings.skybox = sky;
             }
 
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.55f, 0.58f, 0.56f);
+            RenderSettings.ambientLight = new Color(0.42f, 0.46f, 0.52f);
             RenderSettings.ambientIntensity = 1f;
-            RenderSettings.reflectionIntensity = 0.55f;
+            RenderSettings.reflectionIntensity = 0.4f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = 26f;
-            RenderSettings.fogEndDistance = 98f;
-            RenderSettings.fogColor = new Color(0.78f, 0.86f, 0.92f);
+            RenderSettings.fogStartDistance = 32f;
+            RenderSettings.fogEndDistance = 115f;
+            RenderSettings.fogColor = new Color(0.70f, 0.75f, 0.78f);
         }
 
         private Light CreateSun()
@@ -89,14 +91,15 @@ namespace FarmSim
             var sunGo = new GameObject("Sun");
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.97f, 0.90f);
-            sun.intensity = 1.0f;
+            sun.color = new Color(1f, 0.95f, 0.86f);
+            sun.intensity = 0.95f;
             sun.shadows = GraphicsSettings.SoftShadows ? LightShadows.Soft : LightShadows.Hard;
-            sun.shadowStrength = 0.60f;
+            sun.shadowStrength = 0.72f;
             sun.shadowBias = 0.05f;
             sun.shadowNormalBias = 0.35f;
             sun.renderMode = LightRenderMode.ForcePixel;
-            sunGo.transform.rotation = Quaternion.Euler(48f, 40f, 0f);
+            // Lower sun = longer, softer shadows (cinematic late-morning light)
+            sunGo.transform.rotation = Quaternion.Euler(38f, 34f, 0f);
             RenderSettings.sun = sun;
             return sun;
         }
@@ -122,12 +125,14 @@ namespace FarmSim
             // Colour grade: the last, cheapest step that makes the low-poly
             // world look intentional instead of flat.
             var grade = camGo.AddComponent<PostFx>();
+            grade.Exposure = 1.02f;
+            grade.ToneStrength = 0.88f;
             grade.Saturation = GraphicsSettings.GradeSaturation;
             grade.Contrast = GraphicsSettings.GradeContrast;
-            grade.Brightness = -0.02f;
-            grade.Warmth = 0.5f;
-            grade.Vignette = 0.55f;
-            grade.ShadowLift = 0.5f;
+            grade.Lift = 0.035f;
+            grade.Warmth = 0.7f;
+            grade.Vignette = 0.62f;
+            grade.Grain = GraphicsSettings.Current == GraphicsSettings.Tier.Low ? 0f : 0.012f;
 
             return cam;
         }

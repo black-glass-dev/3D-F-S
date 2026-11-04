@@ -49,8 +49,8 @@ namespace FarmSim
 
         private void BuildWheat()
         {
-            var green = new Color(0.55f, 0.78f, 0.30f);
-            var greenDark = new Color(0.42f, 0.68f, 0.24f);
+            var green = new Color(0.50f, 0.62f, 0.32f);
+            var greenDark = new Color(0.36f, 0.48f, 0.26f);
 
             for (int i = 0; i < 5; i++)
             {
@@ -86,8 +86,8 @@ namespace FarmSim
 
         private void BuildTomato()
         {
-            var leaf = new Color(0.32f, 0.66f, 0.26f);
-            var leafLight = new Color(0.42f, 0.75f, 0.32f);
+            var leaf = new Color(0.30f, 0.42f, 0.25f);
+            var leafLight = new Color(0.38f, 0.52f, 0.29f);
 
             var bush = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             bush.name = "Bush";
@@ -133,7 +133,7 @@ namespace FarmSim
 
         private void BuildPumpkin()
         {
-            var leaf = new Color(0.30f, 0.62f, 0.24f);
+            var leaf = new Color(0.28f, 0.40f, 0.24f);
 
             for (int i = 0; i < 4; i++)
             {

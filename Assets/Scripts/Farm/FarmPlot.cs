@@ -35,8 +35,8 @@ namespace FarmSim
 
         public void Init()
         {
-            _soilDryMat = MaterialCache.Get(new Color(0.56f, 0.37f, 0.21f), SurfacePattern.Soil);
-            _soilWetMat = MaterialCache.Get(new Color(0.33f, 0.20f, 0.11f), SurfacePattern.SoilWet);
+            _soilDryMat = MaterialCache.Get(new Color(0.46f, 0.34f, 0.23f), SurfacePattern.Soil);
+            _soilWetMat = MaterialCache.Get(new Color(0.27f, 0.19f, 0.14f), SurfacePattern.SoilWet);
 
             State = PlotState.Empty;
             CropIndex = 0;
@@ -79,7 +79,7 @@ namespace FarmSim
                 pebble.transform.localScale = new Vector3(size, size * 0.6f, size);
                 pebble.transform.localRotation = Quaternion.Euler(Random.Range(0f, 30f), Random.Range(0f, 360f), 0f);
                 pebble.GetComponent<Renderer>().sharedMaterial =
-                    MaterialCache.Get(new Color(0.42f, 0.33f, 0.26f), SurfacePattern.Stone);
+                    MaterialCache.Get(new Color(0.46f, 0.44f, 0.39f), SurfacePattern.Stone);
                 Destroy(pebble.GetComponent<Collider>());
             }
 

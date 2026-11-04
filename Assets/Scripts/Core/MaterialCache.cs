@@ -32,6 +32,7 @@ namespace FarmSim
         private static Shader _foliage;
         private static Material _particle;
         private static Material _tuftMaterial;
+        private static Material _blobMaterial;
 
         public static Shader LitShader
         {
@@ -100,6 +101,32 @@ namespace FarmSim
             return mat;
         }
 
+        /// <summary>A fresh, uncached material (for meshes that need their own settings).</summary>
+        public static Material GetUnique(Color color, SurfacePattern pattern)
+        {
+            var mat = new Material(LitShader);
+            mat.name = "FarmMatUnique_" + pattern;
+            mat.color = color;
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+            if (pattern != SurfacePattern.Smooth && mat.HasProperty("_MainTex"))
+                mat.SetTexture("_MainTex", TextureFactory.Get(pattern));
+            return mat;
+        }
+
+        /// <summary>Soft round contact shadow, drawn with the alpha-blended unlit shader.</summary>
+        public static Material BlobMaterial
+        {
+            get
+            {
+                if (_blobMaterial != null) return _blobMaterial;
+                _blobMaterial = new Material(UnlitShader) { name = "FarmBlob" };
+                _blobMaterial.mainTexture = TextureFactory.Dot;
+                if (_blobMaterial.HasProperty("_TintColor"))
+                    _blobMaterial.SetColor("_TintColor", new Color(0.05f, 0.07f, 0.05f, 0.34f));
+                return _blobMaterial;
+            }
+        }
+
         /// <summary>Alpha-cut grass tuft material (shared by every tuft).</summary>
         public static Material TuftMaterial
         {
@@ -110,7 +137,7 @@ namespace FarmSim
                 _tuftMaterial.name = "FarmTuftMat";
                 _tuftMaterial.mainTexture = TextureFactory.Tuft;
                 if (_tuftMaterial.HasProperty("_Color"))
-                    _tuftMaterial.SetColor("_Color", new Color(0.54f, 0.80f, 0.40f));
+                    _tuftMaterial.SetColor("_Color", new Color(0.44f, 0.55f, 0.34f));
                 if (_tuftMaterial.HasProperty("_Cutoff"))
                     _tuftMaterial.SetFloat("_Cutoff", 0.4f);
                 return _tuftMaterial;

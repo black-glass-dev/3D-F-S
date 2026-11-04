@@ -105,7 +105,7 @@ namespace FarmSim
 
         private void BuildTopBar(Transform parent)
         {
-            var bar = UiFactory.CreateImage(parent, "TopBar", null, new Color(0.09f, 0.16f, 0.08f, 0.92f), false);
+            var bar = UiFactory.CreateImage(parent, "TopBar", null, new Color(0.09f, 0.11f, 0.10f, 0.90f), false);
             UiFactory.Place(bar.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(0f, -TopBarHeight), Vector2.zero);
 
@@ -129,7 +129,7 @@ namespace FarmSim
 
             // day + time-of-day bar (centre)
             _dayText = UiFactory.CreateText(bar.transform, "Day", GameFonts.SemiBold, 42,
-                TextAnchor.MiddleCenter, new Color(1f, 0.96f, 0.86f));
+                TextAnchor.MiddleCenter, new Color(0.92f, 0.90f, 0.84f));
             UiFactory.Place(_dayText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(-180f, -62f), new Vector2(180f, -12f));
 
@@ -150,12 +150,12 @@ namespace FarmSim
             _soundButton = UiFactory.CreateButton(bar.transform, "SoundButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-300f, -38f), new Vector2(-188f, 38f),
-                new Color(0.22f, 0.34f, 0.20f), "SFX", GameFonts.SemiBold, 30, OnSoundClicked);
+                new Color(0.19f, 0.24f, 0.19f), "SFX", GameFonts.SemiBold, 30, OnSoundClicked);
 
             _langButton = UiFactory.CreateButton(bar.transform, "LangButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-180f, -38f), new Vector2(-68f, 38f),
-                new Color(0.22f, 0.34f, 0.20f), "বাংলা", GameFonts.SemiBold, 30, OnLanguageClicked);
+                new Color(0.19f, 0.24f, 0.19f), "বাংলা", GameFonts.SemiBold, 30, OnLanguageClicked);
 
             _nextDayButton = UiFactory.CreateButton(bar.transform, "NextDayButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
@@ -165,12 +165,12 @@ namespace FarmSim
 
         private void BuildBottomBar(Transform parent)
         {
-            var bar = UiFactory.CreateImage(parent, "BottomBar", null, new Color(0.09f, 0.16f, 0.08f, 0.92f), false);
+            var bar = UiFactory.CreateImage(parent, "BottomBar", null, new Color(0.09f, 0.11f, 0.10f, 0.90f), false);
             UiFactory.Place(bar.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
                 new Vector2(0f, 0f), new Vector2(0f, BottomBarHeight));
 
             _seedTitleText = UiFactory.CreateText(bar.transform, "SeedTitle", GameFonts.SemiBold, 34,
-                TextAnchor.MiddleLeft, new Color(1f, 0.96f, 0.86f));
+                TextAnchor.MiddleLeft, new Color(0.92f, 0.90f, 0.84f));
             UiFactory.Place(_seedTitleText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(30f, -58f), new Vector2(330f, -12f));
 
@@ -184,7 +184,7 @@ namespace FarmSim
                 var card = UiFactory.CreateButton(bar.transform, "SeedCard" + i,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(left, -150f), new Vector2(left + cardWidth, -8f),
-                    new Color(0.20f, 0.30f, 0.17f), null, GameFonts.Regular, 30,
+                    new Color(0.17f, 0.22f, 0.17f), null, GameFonts.Regular, 30,
                     () => OnSeedClicked(index));
                 _seedCards.Add(card);
                 _seedBackgrounds.Add(card.GetComponent<Image>());
@@ -201,22 +201,30 @@ namespace FarmSim
                 _seedNames.Add(name);
 
                 var price = UiFactory.CreateText(card.transform, "Price", GameFonts.Regular, 26,
-                    TextAnchor.UpperLeft, new Color(0.85f, 0.95f, 0.80f));
+                    TextAnchor.UpperLeft, new Color(0.78f, 0.84f, 0.74f));
                 UiFactory.Place(price.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.5f),
                     new Vector2(116f, 10f), new Vector2(-12f, 4f));
                 _seedPrices.Add(price);
             }
 
             _hintText = UiFactory.CreateText(bar.transform, "Hint", GameFonts.Regular, 27,
-                TextAnchor.MiddleLeft, new Color(0.82f, 0.92f, 0.78f));
+                TextAnchor.MiddleLeft, new Color(0.76f, 0.80f, 0.72f));
             UiFactory.Place(_hintText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
                 new Vector2(30f, 6f), new Vector2(-30f, 40f));
+
+            // tiny build stamp so a new APK can be recognised at a glance
+            var version = UiFactory.CreateText(bar.transform, "Version", GameFonts.Regular, 22,
+                TextAnchor.LowerRight, new Color(0.78f, 0.80f, 0.74f, 0.55f));
+            version.text = "v1.0.3";
+            version.raycastTarget = false;
+            UiFactory.Place(version.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(-150f, 6f), new Vector2(-24f, 36f));
         }
 
         private void BuildToast(Transform parent)
         {
             var bg = UiFactory.CreateImage(parent, "Toast", UiFactory.RoundedSprite,
-                new Color(0.10f, 0.14f, 0.09f, 0.90f), true);
+                new Color(0.09f, 0.11f, 0.10f, 0.90f), true);
             UiFactory.Place(bg.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(-380f, -300f), new Vector2(380f, -206f));
             _toastBg = bg;

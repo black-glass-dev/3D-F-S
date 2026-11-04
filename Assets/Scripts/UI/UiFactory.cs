@@ -9,13 +9,13 @@ namespace FarmSim
     /// </summary>
     public static class UiFactory
     {
-        public static readonly Color PanelDark = new Color(0.12f, 0.18f, 0.10f, 0.94f);
-        public static readonly Color PanelLight = new Color(0.99f, 0.96f, 0.87f, 0.97f);
-        public static readonly Color Green = new Color(0.36f, 0.62f, 0.24f, 1f);
-        public static readonly Color GreenDark = new Color(0.24f, 0.44f, 0.16f, 1f);
-        public static readonly Color Gold = new Color(1f, 0.80f, 0.24f, 1f);
-        public static readonly Color GoldDark = new Color(0.72f, 0.52f, 0.10f, 1f);
-        public static readonly Color TextDark = new Color(0.16f, 0.20f, 0.12f, 1f);
+        public static readonly Color PanelDark = new Color(0.10f, 0.12f, 0.11f, 0.93f);
+        public static readonly Color PanelLight = new Color(0.90f, 0.88f, 0.82f, 0.97f);
+        public static readonly Color Green = new Color(0.40f, 0.50f, 0.31f, 1f);
+        public static readonly Color GreenDark = new Color(0.26f, 0.33f, 0.21f, 1f);
+        public static readonly Color Gold = new Color(0.84f, 0.68f, 0.34f, 1f);
+        public static readonly Color GoldDark = new Color(0.58f, 0.45f, 0.22f, 1f);
+        public static readonly Color TextDark = new Color(0.15f, 0.16f, 0.14f, 1f);
 
         private static Sprite _rounded;
         private static Sprite _circle;
