@@ -50,7 +50,7 @@ namespace FarmSim
             soil.transform.localPosition = new Vector3(0f, 0.06f, 0f);
             soil.transform.localScale = new Vector3(1f, 0.12f, 1f);
             _soilRenderer = soil.GetComponent<Renderer>();
-            _soilRenderer.material = _soilDryMat;
+            _soilRenderer.sharedMaterial = _soilDryMat;
             Destroy(soil.GetComponent<Collider>());
 
             // --- tilled furrows ---
@@ -63,13 +63,13 @@ namespace FarmSim
                 furrow.transform.localPosition = new Vector3(-0.28f + i * 0.28f, 0.13f, 0f);
                 furrow.transform.localScale = new Vector3(0.10f, 0.035f, 0.86f);
                 var renderer = furrow.GetComponent<Renderer>();
-                renderer.material = _soilDryMat;
+                renderer.sharedMaterial = _soilDryMat;
                 _furrowRenderers[i] = renderer;
                 Destroy(furrow.GetComponent<Collider>());
             }
 
             // --- a few pebbles so empty plots still read as "soil" ---
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 2; i++)
             {
                 var pebble = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 pebble.name = "Pebble";
@@ -78,7 +78,7 @@ namespace FarmSim
                 float size = Random.Range(0.05f, 0.09f);
                 pebble.transform.localScale = new Vector3(size, size * 0.6f, size);
                 pebble.transform.localRotation = Quaternion.Euler(Random.Range(0f, 30f), Random.Range(0f, 360f), 0f);
-                pebble.GetComponent<Renderer>().material =
+                pebble.GetComponent<Renderer>().sharedMaterial =
                     MaterialCache.Get(new Color(0.42f, 0.33f, 0.26f), SurfacePattern.Stone);
                 Destroy(pebble.GetComponent<Collider>());
             }

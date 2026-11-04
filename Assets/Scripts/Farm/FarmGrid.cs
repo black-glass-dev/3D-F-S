@@ -35,8 +35,8 @@ namespace FarmSim
             bed.transform.SetParent(transform, false);
             bed.transform.localPosition = new Vector3(0f, 0.008f, 0f);
             bed.transform.localScale = new Vector3(FieldWidth + 1.3f, 0.04f, FieldDepth + 1.3f);
-            bed.GetComponent<Renderer>().material =
-                MaterialCache.Get(new Color(0.40f, 0.27f, 0.16f), SurfacePattern.Soil);
+            bed.GetComponent<Renderer>().sharedMaterial = MaterialCache.Get(
+                new Color(0.40f, 0.27f, 0.16f), SurfacePattern.Soil);
             Destroy(bed.GetComponent<Collider>());
 
             float width = FieldWidth;
