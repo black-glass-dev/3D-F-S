@@ -325,7 +325,7 @@ namespace FarmSim
             // tiny build stamp so a new APK can be recognised at a glance
             var version = UiFactory.CreateText(bar.transform, "Version", GameFonts.Regular, 20,
                 TextAnchor.LowerRight, new Color(0.78f, 0.80f, 0.74f, 0.55f));
-            version.text = "v1.2.1";
+            version.text = "v1.2.2";
             UiFactory.Place(version.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
                 new Vector2(-150f, 4f), new Vector2(-24f, 30f));
         }
@@ -434,7 +434,9 @@ namespace FarmSim
             if (SfxManager.Instance != null)
             {
                 SfxManager.Instance.ToggleHaptics();
-                if (SfxManager.Instance.HapticsOn) SfxManager.Instance.Haptic();
+                bool on = SfxManager.Instance.HapticsOn;
+                if (on) SfxManager.Instance.Haptic();
+                ShowToast(Localization.T(on ? "vib_on" : "vib_off"));
             }
             RefreshAll();
         }

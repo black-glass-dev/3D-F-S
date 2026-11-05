@@ -76,7 +76,7 @@ namespace FarmSim
             }
 
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.38f, 0.42f, 0.48f);
+            RenderSettings.ambientLight = new Color(0.46f, 0.49f, 0.54f);
             RenderSettings.ambientIntensity = 1f;
             RenderSettings.reflectionIntensity = 0.4f;
             RenderSettings.fog = true;
@@ -94,11 +94,11 @@ namespace FarmSim
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
             sun.color = new Color(1f, 0.95f, 0.86f);
-            sun.intensity = 1.15f;
+            sun.intensity = 1.0f;
             sun.shadows = GraphicsSettings.SoftShadows ? LightShadows.Soft : LightShadows.Hard;
-            sun.shadowStrength = 0.88f;
-            sun.shadowBias = 0.04f;
-            sun.shadowNormalBias = 0.22f;
+            sun.shadowStrength = 0.70f;
+            sun.shadowBias = 0.05f;
+            sun.shadowNormalBias = 0.30f;
             sun.renderMode = LightRenderMode.ForcePixel;
             // Lower sun = longer, softer shadows (cinematic late-morning light)
             sunGo.transform.rotation = Quaternion.Euler(38f, 34f, 0f);
@@ -110,7 +110,7 @@ namespace FarmSim
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Directional;
             fill.color = new Color(0.58f, 0.70f, 0.86f);
-            fill.intensity = 0.26f;
+            fill.intensity = 0.32f;
             fill.shadows = LightShadows.None;
             fill.renderMode = LightRenderMode.ForceVertex;
             fillGo.transform.rotation = Quaternion.Euler(22f, 214f, 0f);
@@ -139,11 +139,11 @@ namespace FarmSim
             // Colour grade: the last, cheapest step that makes the low-poly
             // world look intentional instead of flat.
             var grade = camGo.AddComponent<PostFx>();
-            grade.Exposure = 1.06f;
-            grade.ToneStrength = 0.9f;
+            grade.Exposure = 1.04f;
+            grade.ToneStrength = 0.88f;
             grade.Saturation = GraphicsSettings.GradeSaturation;
             grade.Contrast = GraphicsSettings.GradeContrast;
-            grade.Lift = 0.018f;
+            grade.Lift = 0.03f;
             grade.Warmth = 0.72f;
             grade.Vignette = 0.5f;
             grade.Grain = GraphicsSettings.Current == GraphicsSettings.Tier.Low ? 0f : 0.008f;

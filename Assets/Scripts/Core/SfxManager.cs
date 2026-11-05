@@ -25,12 +25,13 @@ namespace FarmSim
         public bool SoundOn { get; private set; }
         public bool HapticsOn { get; private set; }
 
-        // A 1-second full-strength buzz (Handheld.Vibrate) felt like a fault.
-        // These are short, low-amplitude native taps instead.
-        private const long LightTapMs = 12L;
-        private const long StrongTapMs = 24L;
-        private const int LightAmplitude = 45;   // 1..255
-        private const int StrongAmplitude = 90;
+        // Short, crisp taps: a 12 ms / amplitude-45 pulse was so weak it felt
+        // like the vibration was gone. Two quick pulses at a real amplitude
+        // feel like a proper haptic "tick" without a 1-second buzz.
+        private static readonly long[] LightPattern = { 0L, 16L, 26L, 24L };
+        private static readonly int[] LightAmps = { 0, 130, 0, 100 };
+        private static readonly long[] StrongPattern = { 0L, 26L, 40L, 34L };
+        private static readonly int[] StrongAmps = { 0, 190, 0, 150 };
 
         private AndroidJavaObject _vibrator;
         private bool _vibratorChecked;
@@ -74,6 +75,7 @@ namespace FarmSim
         public void PlayWater()
         {
             Play(_water, 0.94f, 1.04f);
+            Haptic();
         }
 
         public void PlayHarvest()
@@ -86,6 +88,7 @@ namespace FarmSim
         public void PlayCoin()
         {
             Play(_coin, 0.97f, 1.05f);
+            Haptic();
         }
 
         public void PlayError()
@@ -113,19 +116,21 @@ namespace FarmSim
                 var vibrator = Vibrator;
                 if (vibrator != null)
                 {
-                    long ms = strong ? StrongTapMs : LightTapMs;
+                    long[] timings = strong ? StrongPattern : LightPattern;
+                    int[] amplitudes = strong ? StrongAmps : LightAmps;
+
                     if (_sdkInt >= 26)
                     {
                         using (var effectClass = new AndroidJavaClass("android.os.VibrationEffect"))
                         using (var effect = effectClass.CallStatic<AndroidJavaObject>(
-                                   "createOneShot", ms, strong ? StrongAmplitude : LightAmplitude))
+                                   "createWaveform", timings, amplitudes, -1))
                         {
                             vibrator.Call("vibrate", effect);
                         }
                     }
                     else
                     {
-                        vibrator.Call("vibrate", ms);
+                        vibrator.Call("vibrate", timings, -1);
                     }
                     return;
                 }
