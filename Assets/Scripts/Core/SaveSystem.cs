@@ -29,6 +29,11 @@ namespace FarmSim
         public List<int> Store = new List<int>();
         public int TotalEarned = 0;
 
+        // --- v1.2 ---
+        public int Tool = 0;
+        public bool Well = false;
+        public bool Sprinkler = false;
+
         public List<PlotSaveData> Plots = new List<PlotSaveData>();
     }
 

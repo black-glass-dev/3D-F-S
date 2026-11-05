@@ -32,10 +32,12 @@ namespace FarmSim
         public const string Folder = "Models/";
 
         private const int HeaderSize = 20;   // magic(4) ver(2) flags(2) vcount(4) tcount(4) idx(4)
-        private const int VertexStride = 28; // 3f pos + 3f normal + 4 bytes colour
+        private const int VertexStride = 28; // v1: 3f pos + 3f normal + 4 bytes colour
+        private const int VertexStrideUv = 32; // v2: 3f pos + 3f normal + 2f uv
 
         private static readonly Dictionary<string, Mesh> Meshes = new Dictionary<string, Mesh>();
         private static readonly Dictionary<string, Material> BakedMaterials = new Dictionary<string, Material>();
+        private static readonly Dictionary<string, bool> TexturedKeys = new Dictionary<string, bool>();
         private static readonly Dictionary<Material, Material> Adapted = new Dictionary<Material, Material>();
 
         private static readonly Color DefaultPropColor = new Color(0.72f, 0.70f, 0.64f);
@@ -128,10 +130,22 @@ namespace FarmSim
             Material mat;
             if (BakedMaterials.TryGetValue(key, out mat) && mat != null) return mat;
 
-            mat = new Material(MaterialCache.LitShader) { name = "FarmVertexColour_" + key };
+            mat = new Material(MaterialCache.LitShader) { name = "FarmBaked_" + key };
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", Color.white);
-            if (mat.HasProperty("_VertexColor")) mat.SetFloat("_VertexColor", 1f);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.02f);
+
+            bool textured;
+            TexturedKeys.TryGetValue(key, out textured);
+            if (textured)
+            {
+                var albedo = Resources.Load<Texture2D>(Folder + key + "_albedo");
+                if (albedo != null && mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", albedo);
+                if (mat.HasProperty("_VertexColor")) mat.SetFloat("_VertexColor", 0f);
+            }
+            else if (mat.HasProperty("_VertexColor"))
+            {
+                mat.SetFloat("_VertexColor", 1f);
+            }
             BakedMaterials[key] = mat;
             return mat;
         }
@@ -183,7 +197,16 @@ namespace FarmSim
             if (asset == null) return null;
 
             Mesh mesh = Parse(asset.bytes, key);
-            if (mesh != null) Meshes[key] = mesh;
+            if (mesh == null)
+            {
+                // A silent null here means the world quietly falls back to the
+                // procedural prop (that is how the house model went missing in
+                // v1.1.x) — make it shout in the device log instead.
+                Debug.LogError("[ModelLibrary] " + key + ".bytes exists but could not be parsed; " +
+                               "using the procedural fallback.");
+                return null;
+            }
+            Meshes[key] = mesh;
 
             // The bytes were copied into managed arrays; release the 2.5 MB blob.
             Resources.UnloadAsset(asset);
@@ -197,17 +220,25 @@ namespace FarmSim
                 return null;
 
             int version = bytes[4] | (bytes[5] << 8);
-            if (version != 1) return null;
+            if (version != 1 && version != 2) return null;
 
             int vertexCount = ReadInt(bytes, 8);
             int triangleCount = ReadInt(bytes, 12);
             int indexSize = ReadInt(bytes, 16);
-            if (vertexCount <= 0 || triangleCount <= 0 || (indexSize != 2 && indexSize != 4)) return null;
+            if (vertexCount <= 0 || triangleCount <= 0) return null;
+            // v1 indexes are 2 or 4 bytes; v2 may also be 0 (non-indexed).
+            if (indexSize != 2 && indexSize != 4 && !(version == 2 && indexSize == 0)) return null;
 
-            long expected = HeaderSize
-                            + (long)vertexCount * VertexStride
+            int stride = version == 2 ? VertexStrideUv : VertexStride;
+            long expected = HeaderSize + (long)vertexCount * stride
                             + (long)triangleCount * 3 * indexSize;
             if (bytes.Length < expected) return null;
+
+            if (version == 2)
+            {
+                TexturedKeys[key] = true;
+                return ParseTextured(bytes, key, vertexCount, triangleCount, indexSize);
+            }
 
             var vertices = new Vector3[vertexCount];
             var normals = new Vector3[vertexCount];
@@ -251,6 +282,51 @@ namespace FarmSim
             mesh.vertices = vertices;
             mesh.normals = normals;
             mesh.colors32 = colors;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        /// <summary>Version 2: duplicated vertices, UVs, no vertex colours.</summary>
+        private static Mesh ParseTextured(byte[] bytes, string key, int vertexCount, int triangleCount, int indexSize)
+        {
+            var raw = new float[vertexCount * 8];
+            System.Buffer.BlockCopy(bytes, HeaderSize, raw, 0, vertexCount * 32);
+
+            var vertices = new Vector3[vertexCount];
+            var normals = new Vector3[vertexCount];
+            var uvs = new Vector2[vertexCount];
+            for (int i = 0; i < vertexCount; i++)
+            {
+                int f = i * 8;
+                vertices[i] = new Vector3(raw[f], raw[f + 1], raw[f + 2]);
+                normals[i] = new Vector3(raw[f + 3], raw[f + 4], raw[f + 5]);
+                uvs[i] = new Vector2(raw[f + 6], raw[f + 7]);
+            }
+
+            var triangles = new int[triangleCount * 3];
+            int indexOffset = HeaderSize + vertexCount * 32;
+            if (indexSize == 0)
+            {
+                for (int i = 0; i < triangles.Length; i++) triangles[i] = i;
+            }
+            else if (indexSize == 4)
+            {
+                System.Buffer.BlockCopy(bytes, indexOffset, triangles, 0, triangleCount * 3 * 4);
+            }
+            else
+            {
+                var shortIndices = new ushort[triangleCount * 3];
+                System.Buffer.BlockCopy(bytes, indexOffset, shortIndices, 0, triangleCount * 3 * 2);
+                for (int i = 0; i < shortIndices.Length; i++) triangles[i] = shortIndices[i];
+            }
+
+            var mesh = new Mesh { name = key };
+            if (vertexCount > 65000)
+                mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.uv = uvs;
             mesh.triangles = triangles;
             mesh.RecalculateBounds();
             return mesh;

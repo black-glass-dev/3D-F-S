@@ -222,10 +222,28 @@ namespace FarmSim
 
         public void OnTap()
         {
+            var manager = GameManager.Instance;
             if (Locked)
             {
-                if (GameManager.Instance != null) GameManager.Instance.BuyPlot(Index);
+                if (manager != null) manager.BuyPlot(Index);
                 return;
+            }
+
+            int tool = manager != null ? manager.ToolIndex : 0;
+            switch (tool)
+            {
+                case 1: // planting only
+                    if (State == PlotState.Empty) TryPlant();
+                    else WrongTool("tool_need_empty");
+                    return;
+                case 2: // watering only
+                    if (State == PlotState.Growing) TryWater();
+                    else WrongTool("tool_need_growing");
+                    return;
+                case 3: // harvesting only
+                    if (State == PlotState.Ready) Harvest();
+                    else WrongTool("tool_need_ready");
+                    return;
             }
 
             switch (State)
@@ -240,6 +258,20 @@ namespace FarmSim
                     Harvest();
                     break;
             }
+        }
+
+        private static void WrongTool(string messageKey)
+        {
+            if (UIManager.Instance != null)
+                UIManager.Instance.ShowToast(Localization.T(messageKey), true);
+        }
+
+        /// <summary>Sprinkler upgrade — water without a tap.</summary>
+        public void AutoWater()
+        {
+            if (Locked || State != PlotState.Growing || Watered) return;
+            Watered = true;
+            ApplyVisual(true);
         }
 
         private void TryPlant()
@@ -265,7 +297,8 @@ namespace FarmSim
 
             CropIndex = cropIndex;
             Progress = 0f;
-            Watered = false;
+            // A repaired well waters the seed as it goes in.
+            Watered = manager.HasWell;
             State = PlotState.Growing;
             BuildCrop();
 

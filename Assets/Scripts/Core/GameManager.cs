@@ -16,6 +16,8 @@ namespace FarmSim
         public const int StartCoins = 120;
         public const int StartPlots = 24;
         public const int MaxPlots = 36;
+        public const int WellCost = 350;
+        public const int SprinklerCost = 800;
 
         public int Coins { get; private set; }
         public int Day { get; private set; }
@@ -34,6 +36,15 @@ namespace FarmSim
         public int[] Store { get; private set; }
 
         public float TimeInDay { get; private set; }
+
+        /// <summary>0 = auto (tap does the sensible thing), 1 plant, 2 water, 3 harvest.</summary>
+        public int ToolIndex { get; private set; }
+
+        /// <summary>A repaired well waters every seed the moment it is planted.</summary>
+        public bool HasWell { get; private set; }
+
+        /// <summary>Sprinklers re-water every growing plot at the start of each day.</summary>
+        public bool HasSprinkler { get; private set; }
 
         public float DayProgress01
         {
@@ -276,6 +287,10 @@ namespace FarmSim
                 for (int i = 0; i < count; i++) Store[i] = Mathf.Max(0, data.Store[i]);
             }
 
+            ToolIndex = Mathf.Clamp(data.Tool, 0, 3);
+            HasWell = data.Well;
+            HasSprinkler = data.Sprinkler;
+
             SelectedCropIndex = Mathf.Clamp(data.SelectedCrop, 0, CropDatabase.Count - 1);
             if (!IsCropUnlocked(SelectedCropIndex)) SelectedCropIndex = 0;
 
@@ -295,6 +310,9 @@ namespace FarmSim
                 Xp = Xp,
                 Level = Level,
                 TotalEarned = TotalEarned,
+                Tool = ToolIndex,
+                Well = HasWell,
+                Sprinkler = HasSprinkler,
                 Store = new System.Collections.Generic.List<int>(Store)
             };
             if (_grid != null)
@@ -380,7 +398,10 @@ namespace FarmSim
             Day++;
 
             if (_grid != null)
+            {
                 _grid.OnNewDay();
+                if (HasSprinkler) _grid.WaterAll();
+            }
 
             RecomputeMarket();
             Notify();
@@ -427,6 +448,53 @@ namespace FarmSim
             }
 
             Notify();
+        }
+
+        public void SelectTool(int index)
+        {
+            ToolIndex = Mathf.Clamp(index, 0, 3);
+            Notify();
+            SaveNow();
+        }
+
+        public bool BuyWell()
+        {
+            if (HasWell) return false;
+            if (!SpendCoins(WellCost))
+            {
+                if (SfxManager.Instance != null) SfxManager.Instance.PlayError();
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowToast(Localization.T("not_enough_coins"), true);
+                return false;
+            }
+
+            HasWell = true;
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayCoin();
+            if (UIManager.Instance != null)
+                UIManager.Instance.ShowToast(Localization.T("well_bought"), false, true);
+            Notify();
+            SaveNow();
+            return true;
+        }
+
+        public bool BuySprinkler()
+        {
+            if (HasSprinkler) return false;
+            if (!SpendCoins(SprinklerCost))
+            {
+                if (SfxManager.Instance != null) SfxManager.Instance.PlayError();
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowToast(Localization.T("not_enough_coins"), true);
+                return false;
+            }
+
+            HasSprinkler = true;
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayCoin();
+            if (UIManager.Instance != null)
+                UIManager.Instance.ShowToast(Localization.T("sprinkler_bought"), false, true);
+            Notify();
+            SaveNow();
+            return true;
         }
 
         public void SelectCrop(int index)

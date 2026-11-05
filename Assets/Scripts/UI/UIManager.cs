@@ -33,7 +33,9 @@ namespace FarmSim
         private CanvasGroup _toastGroup;
         private Button _langButton;
         private Button _soundButton;
+        private Button _vibrationButton;
         private Button _nextDayButton;
+        private readonly List<Button> _toolButtons = new List<Button>();
         private Button _marketButton;
         private Text _marketLabel;
         private CanvasGroup _tutorialGroup;
@@ -124,7 +126,15 @@ namespace FarmSim
 
         private void BuildTopBar(Transform parent)
         {
-            var bar = UiFactory.CreateImage(parent, "TopBar", null, new Color(0.09f, 0.11f, 0.10f, 0.90f), false);
+            // A soft fade instead of a solid band: the world stays visible right
+            // up under the HUD (v1.1 shipped an opaque black strip that looked
+            // like letterboxing).
+            var topFade = UiFactory.CreateImage(parent, "TopFade", UiFactory.FadeTop,
+                new Color(0.05f, 0.08f, 0.06f, 1f), false);
+            UiFactory.Place(topFade.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f),
+                new Vector2(0f, -226f), Vector2.zero);
+
+            var bar = UiFactory.CreateImage(parent, "TopBar", null, new Color(0f, 0f, 0f, 0f), false);
             UiFactory.Place(bar.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(0f, -TopBarHeight), Vector2.zero);
 
@@ -151,7 +161,7 @@ namespace FarmSim
 
             // ---- level + XP ----
             var levelBg = UiFactory.CreateImage(bar.transform, "LevelPill", UiFactory.RoundedSprite,
-                new Color(0.16f, 0.19f, 0.16f, 0.96f), true);
+                new Color(0.10f, 0.13f, 0.11f, 0.78f), true);
             UiFactory.Place(levelBg.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                 new Vector2(344f, -44f), new Vector2(636f, 44f));
 
@@ -162,6 +172,7 @@ namespace FarmSim
             _levelText.text = "Lv 1";
 
             _levelText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UiFactory.Shadowed(_levelText, 0.5f);
 
             var xpBg = UiFactory.CreateImage(levelBg.transform, "XpBg", UiFactory.RoundedSprite,
                 new Color(1f, 1f, 1f, 0.16f), true);
@@ -181,7 +192,8 @@ namespace FarmSim
             _dayText = UiFactory.CreateText(bar.transform, "Day", GameFonts.SemiBold, 38,
                 TextAnchor.MiddleCenter, new Color(0.92f, 0.90f, 0.84f));
             UiFactory.Place(_dayText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-190f, 4f), new Vector2(190f, 52f));
+                new Vector2(-200f, 6f), new Vector2(200f, 56f));
+            UiFactory.Shadowed(_dayText, 0.6f);
 
             var barBg = UiFactory.CreateImage(bar.transform, "DayBarBg", UiFactory.RoundedSprite,
                 new Color(1f, 1f, 1f, 0.18f), true);
@@ -200,23 +212,33 @@ namespace FarmSim
             // ---- right side buttons ----
             _soundButton = UiFactory.CreateButton(bar.transform, "SoundButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-540f, -38f), new Vector2(-428f, 38f),
-                new Color(0.19f, 0.24f, 0.19f), "SFX", GameFonts.SemiBold, 28, OnSoundClicked);
+                new Vector2(-660f, -36f), new Vector2(-560f, 36f),
+                new Color(0.19f, 0.24f, 0.19f), "SFX", GameFonts.SemiBold, 26, OnSoundClicked);
+
+            _vibrationButton = UiFactory.CreateButton(bar.transform, "VibrationButton",
+                new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-550f, -36f), new Vector2(-450f, 36f),
+                new Color(0.19f, 0.24f, 0.19f), "VIB", GameFonts.SemiBold, 26, OnVibrationClicked);
 
             _langButton = UiFactory.CreateButton(bar.transform, "LangButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-416f, -38f), new Vector2(-304f, 38f),
-                new Color(0.19f, 0.24f, 0.19f), "বাংলা", GameFonts.SemiBold, 28, OnLanguageClicked);
+                new Vector2(-440f, -36f), new Vector2(-340f, 36f),
+                new Color(0.19f, 0.24f, 0.19f), "বাংলা", GameFonts.SemiBold, 26, OnLanguageClicked);
 
             _nextDayButton = UiFactory.CreateButton(bar.transform, "NextDayButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-288f, -44f), new Vector2(-24f, 44f),
+                new Vector2(-326f, -42f), new Vector2(-24f, 42f),
                 UiFactory.Gold, Localization.T("next_day"), GameFonts.SemiBold, 30, OnNextDayClicked);
         }
 
         private void BuildBottomBar(Transform parent)
         {
-            var bar = UiFactory.CreateImage(parent, "BottomBar", null, new Color(0.09f, 0.11f, 0.10f, 0.90f), false);
+            var bottomFade = UiFactory.CreateImage(parent, "BottomFade", UiFactory.FadeBottom,
+                new Color(0.05f, 0.08f, 0.06f, 1f), false);
+            UiFactory.Place(bottomFade.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
+                new Vector2(0f, 0f), new Vector2(0f, BottomBarHeight + 96f));
+
+            var bar = UiFactory.CreateImage(parent, "BottomBar", null, new Color(0f, 0f, 0f, 0f), false);
             UiFactory.Place(bar.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
                 Vector2.zero, new Vector2(0f, BottomBarHeight));
 
@@ -233,7 +255,7 @@ namespace FarmSim
                 var card = UiFactory.CreateButton(bar.transform, "SeedCard" + i,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(left, -166f), new Vector2(left + 300f, -40f),
-                    new Color(0.17f, 0.22f, 0.17f), null, GameFonts.Regular, 30,
+                    new Color(0.13f, 0.18f, 0.14f, 0.92f), null, GameFonts.Regular, 30,
                     () => OnSeedSlotClicked(slot));
                 _seedCards.Add(card);
                 _seedBackgrounds.Add(card.GetComponent<Image>());
@@ -273,6 +295,19 @@ namespace FarmSim
             UiFactory.Place(_pageText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-648f, -104f), new Vector2(-520f, -74f));
 
+            // tool selector, stacked up the right edge (above the bar)
+            string[] toolLabels = { "AUTO", "PLANT", "WATER", "PICK" };
+            for (int t = 0; t < toolLabels.Length; t++)
+            {
+                int tool = t;
+                var button = UiFactory.CreateButton(parent, "Tool" + t,
+                    new Vector2(1f, 0f), new Vector2(1f, 0f),
+                    new Vector2(-124f, 232f + t * 88f), new Vector2(-24f, 316f + t * 88f),
+                    new Color(0.13f, 0.18f, 0.14f, 0.88f), toolLabels[t], GameFonts.SemiBold, 22,
+                    () => OnToolClicked(tool));
+                _toolButtons.Add(button);
+            }
+
             // market button
             _marketButton = UiFactory.CreateButton(bar.transform, "MarketButton",
                 new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -290,7 +325,7 @@ namespace FarmSim
             // tiny build stamp so a new APK can be recognised at a glance
             var version = UiFactory.CreateText(bar.transform, "Version", GameFonts.Regular, 20,
                 TextAnchor.LowerRight, new Color(0.78f, 0.80f, 0.74f, 0.55f));
-            version.text = "v1.1.1";
+            version.text = "v1.2.1";
             UiFactory.Place(version.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
                 new Vector2(-150f, 4f), new Vector2(-24f, 30f));
         }
@@ -394,6 +429,23 @@ namespace FarmSim
             RefreshAll();
         }
 
+        private void OnVibrationClicked()
+        {
+            if (SfxManager.Instance != null)
+            {
+                SfxManager.Instance.ToggleHaptics();
+                if (SfxManager.Instance.HapticsOn) SfxManager.Instance.Haptic();
+            }
+            RefreshAll();
+        }
+
+        private void OnToolClicked(int tool)
+        {
+            if (GameManager.Instance != null) GameManager.Instance.SelectTool(tool);
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayTap();
+            RefreshAll();
+        }
+
         public void ShowTutorial()
         {
             if (_tutorialGroup == null) return;
@@ -459,6 +511,28 @@ namespace FarmSim
             {
                 var label = _nextDayButton.GetComponentInChildren<Text>();
                 if (label != null) label.text = Localization.T("next_day");
+            }
+
+            if (_vibrationButton != null)
+            {
+                var label = _vibrationButton.GetComponentInChildren<Text>();
+                bool vib = SfxManager.Instance == null || SfxManager.Instance.HapticsOn;
+                if (label != null) label.text = "VIB";
+                var img = _vibrationButton.GetComponent<Image>();
+                if (img != null)
+                    img.color = vib ? new Color(0.19f, 0.24f, 0.19f) : new Color(0.26f, 0.16f, 0.15f, 0.9f);
+            }
+
+            for (int i = 0; i < _toolButtons.Count; i++)
+            {
+                var img = _toolButtons[i].GetComponent<Image>();
+                if (img == null) continue;
+                bool selected = i == manager.ToolIndex;
+                img.color = selected
+                    ? UiFactory.Green
+                    : new Color(0.13f, 0.18f, 0.14f, 0.88f);
+                var label = _toolButtons[i].GetComponentInChildren<Text>();
+                if (label != null) label.color = selected ? Color.white : new Color(0.82f, 0.86f, 0.78f);
             }
 
             if (_soundButton != null)

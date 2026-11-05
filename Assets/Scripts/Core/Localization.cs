@@ -73,8 +73,17 @@ namespace FarmSim
             { "land_bought", "Land bought!" },
             { "close", "Close" },
             { "market_price", "Today's price" },
-            { "plots", "plots" }
-        };
+            { "plots", "plots" },
+            { "well", "Well" },
+            { "sprinkler", "Sprinkler" },
+            { "well_bought", "The well is repaired — every seed is watered!" },
+            { "sprinkler_bought", "Sprinklers on — crops water themselves each morning!" },
+            { "already_bought", "Already built" },
+            { "need_well_first", "Repair the well first" },
+            { "tool_need_empty", "Pick the PLANT tool for an empty plot" },
+            { "tool_need_growing", "Pick the WATER tool for a growing crop" },
+            { "tool_need_ready", "Pick the PICK tool for a ripe crop" },
+};
 
         private static readonly Dictionary<string, string> Bn = new Dictionary<string, string>
         {
@@ -131,8 +140,17 @@ namespace FarmSim
             { "land_bought", "নতুন জমি কেনা হয়েছে!" },
             { "close", "বন্ধ" },
             { "market_price", "আজকের দাম" },
-            { "playes", "জমি" }
-        };
+            { "plots", "জমি" },
+            { "well", "কুয়া" },
+            { "sprinkler", "স্প্রিংকলার" },
+            { "well_bought", "কুয়া মেরামত হয়েছে — বীজ পোতার সাথে সাথেই পানি!" },
+            { "sprinkler_bought", "স্প্রিংকলার চালু — প্রতিদিন সকালে নিজে থেকেই পানি!" },
+            { "already_bought", "আগেই করা আছে" },
+            { "need_well_first", "আগে কুয়া মেরামত করুন" },
+            { "tool_need_empty", "খালি জমির জন্য PLANT টুল বেছে নিন" },
+            { "tool_need_growing", "বাড়ন্ত ফসলের জন্য WATER টুল নিন" },
+            { "tool_need_ready", "পাকা ফসলের জন্য PICK টুল নিন" },
+};
 
         public static string T(string key)
         {

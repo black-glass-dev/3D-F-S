@@ -19,6 +19,51 @@ namespace FarmSim
 
         private static Sprite _rounded;
         private static Sprite _circle;
+        private static Sprite _fadeTop;
+        private static Sprite _fadeBottom;
+        private static Sprite _softShadow;
+
+        /// <summary>Dark-to-transparent vertical fade, solid end at the top.</summary>
+        public static Sprite FadeTop
+        {
+            get { if (_fadeTop == null) _fadeTop = BuildFade(true); return Safe(_fadeTop); }
+        }
+
+        /// <summary>Dark-to-transparent vertical fade, solid end at the bottom.</summary>
+        public static Sprite FadeBottom
+        {
+            get { if (_fadeBottom == null) _fadeBottom = BuildFade(false); return Safe(_fadeBottom); }
+        }
+
+        private static Sprite Safe(Sprite sprite)
+        {
+            if (sprite == null) sprite = RoundedSprite;
+            return sprite;
+        }
+
+        private static Sprite BuildFade(bool darkAtTop)
+        {
+            const int w = 8;
+            const int h = 96;
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Bilinear;
+            var px = new Color32[w * h];
+            for (int y = 0; y < h; y++)
+            {
+                float t = y / (float)(h - 1);          // 0 = bottom row
+                float towards = darkAtTop ? t : 1f - t; // 1 = solid end
+                float a = Mathf.Pow(towards, 1.6f);
+                byte alpha = (byte)(Mathf.Clamp01(a) * 255f);
+                for (int x = 0; x < w; x++)
+                    px[y * w + x] = new Color32(255, 255, 255, alpha);
+            }
+            tex.SetPixels32(px);
+            tex.Apply();
+            var sprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
+            sprite.name = darkAtTop ? "FadeTop" : "FadeBottom";
+            return sprite;
+        }
 
         public static Sprite RoundedSprite
         {
@@ -109,13 +154,16 @@ namespace FarmSim
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             var text = go.AddComponent<Text>();
-            text.font = font;
+            text.font = font != null ? font : GameFonts.Builtin;
             text.fontSize = size;
             text.alignment = anchor;
             text.color = color;
             text.supportRichText = false;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            // NEVER truncate vertically: a rect even slightly shorter than the
+            // line height makes uGUI drop the whole string (that is why the
+            // level, day, hint and version texts were invisible in v1.1).
+            text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
             return text;
         }
@@ -166,6 +214,15 @@ namespace FarmSim
             rt.offsetMin = offsetMin;
             rt.offsetMax = offsetMax;
             return rt;
+        }
+
+        /// <summary>Cheap text shadow so HUD text stays readable over bright grass.</summary>
+        public static void Shadowed(Text text, float strength = 0.55f)
+        {
+            if (text == null) return;
+            var shadow = text.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, strength);
+            shadow.effectDistance = new Vector2(0f, -2f);
         }
 
         public static void AddShadow(GameObject target, Color color, Vector2 distance)

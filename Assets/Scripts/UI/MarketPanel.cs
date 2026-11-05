@@ -16,6 +16,10 @@ namespace FarmSim
         private Text _titleText;
         private Text _emptyText;
         private Text _totalText;
+        private Button _wellButton;
+        private Button _sprinklerButton;
+        private Text _wellLabel;
+        private Text _sprinklerLabel;
         private Button _sellAllButton;
         private Text _sellAllLabel;
 
@@ -85,6 +89,23 @@ namespace FarmSim
                 new Vector2(-380f, 28f), new Vector2(-36f, 112f),
                 UiFactory.Gold, Localization.T("sell_all"), GameFonts.SemiBold, 34, OnSellAll);
             _sellAllLabel = _sellAllButton.GetComponentInChildren<Text>();
+
+            // farm upgrades live here too: the barn is where you spend coins
+            _wellButton = UiFactory.CreateButton(card.transform, "BuyWell",
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-404f, -92f), new Vector2(-216f, -18f),
+                new Color(0.30f, 0.42f, 0.52f, 0.95f), Localization.T("well"), GameFonts.SemiBold, 26,
+                OnBuyWell);
+            _wellLabel = _wellButton.GetComponentInChildren<Text>();
+            if (_wellLabel != null) _wellLabel.verticalOverflow = VerticalWrapMode.Overflow;
+
+            _sprinklerButton = UiFactory.CreateButton(card.transform, "BuySprinkler",
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-206f, -92f), new Vector2(-18f, -18f),
+                new Color(0.30f, 0.42f, 0.52f, 0.95f), Localization.T("sprinkler"), GameFonts.SemiBold, 26,
+                OnBuySprinkler);
+            _sprinklerLabel = _sprinklerButton.GetComponentInChildren<Text>();
+            if (_sprinklerLabel != null) _sprinklerLabel.verticalOverflow = VerticalWrapMode.Overflow;
 
             _overlay.SetActive(false);
         }
@@ -186,6 +207,51 @@ namespace FarmSim
             Refresh();
         }
 
+        private void OnBuyWell()
+        {
+            var manager = GameManager.Instance;
+            if (manager == null) return;
+            if (manager.HasWell)
+            {
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowToast(Localization.T("already_bought"), true);
+                return;
+            }
+
+            if (manager.BuyWell())
+            {
+                if (UIManager.Instance != null) UIManager.Instance.RefreshAll();
+                Refresh();
+            }
+        }
+
+        private void OnBuySprinkler()
+        {
+            var manager = GameManager.Instance;
+            if (manager == null) return;
+
+            if (!manager.HasWell)
+            {
+                if (SfxManager.Instance != null) SfxManager.Instance.PlayError();
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowToast(Localization.T("need_well_first"), true);
+                return;
+            }
+
+            if (manager.HasSprinkler)
+            {
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowToast(Localization.T("already_bought"), true);
+                return;
+            }
+
+            if (manager.BuySprinkler())
+            {
+                if (UIManager.Instance != null) UIManager.Instance.RefreshAll();
+                Refresh();
+            }
+        }
+
         private void OnSellAll()
         {
             var manager = GameManager.Instance;
@@ -270,6 +336,24 @@ namespace FarmSim
                 if (_sellLabels.Count > i && _sellLabels[i] != null)
                     _sellLabels[i].text = stored > 0 ? value.ToString() : Localization.T("sell");
             }
+
+            if (_wellLabel != null)
+            {
+                _wellLabel.text = manager.HasWell
+                    ? "\u2713 " + Localization.T("well")
+                    : Localization.T("well") + "  " + GameManager.WellCost;
+            }
+            if (_wellButton != null)
+                _wellButton.interactable = !manager.HasWell;
+
+            if (_sprinklerLabel != null)
+            {
+                _sprinklerLabel.text = manager.HasSprinkler
+                    ? "\u2713 " + Localization.T("sprinkler")
+                    : Localization.T("sprinkler") + "  " + GameManager.SprinklerCost;
+            }
+            if (_sprinklerButton != null)
+                _sprinklerButton.interactable = !manager.HasSprinkler && manager.HasWell;
 
             if (_totalText != null)
                 _totalText.text = Localization.T("total_value") + ": " + manager.StoreValue;

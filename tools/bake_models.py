@@ -32,8 +32,15 @@ COMPONENT = {5120: ('b', 1), 5121: ('B', 1), 5122: ('h', 2), 5123: ('H', 2),
 NCOMP = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}
 
 LIGHT_MESH_TRIS = 25000      # below this: keep UVs + texture, ship as OBJ
-TARGET_REDUCTION = 0.75      # heavy meshes: quadric collapse ratio
+TARGET_REDUCTION = 0.75      # heavy meshes: quadric collapse ratio (~62k tris)
+
+# Photogrammetry albedo atlases are irregular: any UV transfer onto a
+# decimated mesh shows as per-triangle patchwork, so scans are shipped with
+# baked vertex colours (smooth, coherent) instead. Flip this to True for a
+# future model whose atlas unwraps cleanly.
+USE_TEXTURE_BAKE = False
 ATLAS_SIZE = 512             # downscale imported textures for phones
+SCAN_TEX_SIZE = 1024         # albedo size for the baked scan atlases
 
 
 # --------------------------------------------------------------------------
@@ -228,7 +235,8 @@ def write_fmsh(path, V, N, C, F, flip=False):
     with open(path, 'wb') as f:
         f.write(b'FMSH')
         # 20-byte header: magic, version, flags, vertex count, tri count, index size
-        f.write(struct.pack('<HHIII', 1, 0, vcount, tcount, 1 if idx16 else 0))
+        # (the index size must be the BYTE size: 2 or 4)
+        f.write(struct.pack('<HHIII', 1, 0, vcount, tcount, 2 if idx16 else 4))
         buf = np.empty((vcount, 6), dtype=np.float32)
         buf[:, 0:3] = V
         buf[:, 3:6] = N
@@ -238,6 +246,97 @@ def write_fmsh(path, V, N, C, F, flip=False):
         f.write(np.hstack([c, alpha]).tobytes())
         f.write(F.astype(np.uint16 if idx16 else np.uint32).tobytes())
     return os.path.getsize(path)
+
+
+def write_fmsh_textured(path, V, N, UV, F):
+    """Version 2 of the baked mesh: positions, normals and per-vertex UVs.
+
+    Vertices are duplicated per triangle (the UV mapping jumps between atlas
+    islands), so the file is non-indexed: indexSize = 0.
+    """
+    V = V * np.array([-1.0, 1.0, 1.0])   # glTF -> Unity handedness
+    N = N * np.array([-1.0, 1.0, 1.0])
+    vcount = len(V)
+    buf = np.empty((vcount, 8), dtype=np.float32)
+    buf[:, 0:3] = V
+    buf[:, 3:6] = N
+    buf[:, 6:8] = UV
+    with open(path, 'wb') as f:
+        f.write(b'FMSH')
+        f.write(struct.pack('<HHIII', 2, 0, vcount, len(F), 0))
+        f.write(buf.tobytes())
+    return os.path.getsize(path)
+
+
+def barycentric(q, a, b, c, n):
+    d = np.dot(q - a, n)
+    q = q - n * d
+    v0, v1, v2 = b - a, c - a, q - a
+    d00, d01, d11 = v0 @ v0, v0 @ v1, v1 @ v1
+    d20, d21 = v2 @ v0, v2 @ v1
+    denom = d00 * d11 - d01 * d01
+    if abs(denom) < 1e-12:
+        return 1.0, 0.0, 0.0
+    v = (d11 * d20 - d01 * d21) / denom
+    w = (d00 * d21 - d01 * d20) / denom
+    u = 1.0 - v - w
+    # clamp outside-the-triangle projections, then renormalise
+    u, v, w = max(0.0, u), max(0.0, v), max(0.0, w)
+    total = u + v + w
+    if total < 1e-6:
+        return 1.0, 0.0, 0.0
+    return u / total, v / total, w / total
+
+
+def transfer_uv(V_orig, F_orig, UV_orig, V_new, F_new):
+    """Give every decimated triangle the UV mapping of the closest original
+    triangle (projected through its plane). Keeps the texture readable instead
+    of smearing atlas islands across big triangles."""
+    from scipy.spatial import cKDTree
+
+    centroids = V_orig[F_orig].mean(axis=1)
+    normals = np.cross(V_orig[F_orig[:, 1]] - V_orig[F_orig[:, 0]],
+                       V_orig[F_orig[:, 2]] - V_orig[F_orig[:, 0]])
+    normals /= (np.linalg.norm(normals, axis=1, keepdims=True) + 1e-12)
+
+    new_normals = np.cross(V_new[F_new[:, 1]] - V_new[F_new[:, 0]],
+                           V_new[F_new[:, 2]] - V_new[F_new[:, 0]])
+    new_normals /= (np.linalg.norm(new_normals, axis=1, keepdims=True) + 1e-12)
+
+    tree = cKDTree(centroids)
+    k = 6
+    _, idx = tree.query(V_new[F_new].mean(axis=1), k=k)
+
+    verts, uvs = [], []
+    for i in range(len(F_new)):
+        tri = F_new[i]
+        tri_pts = V_new[tri]
+
+        # Pick the source triangle that lies in the same plane: centroid
+        # distance alone happily maps a gable onto the roof and smears red
+        # tiles down the wall.
+        best, best_score = int(idx[i, 0]), 1e9
+        for cand in idx[i]:
+            cand = int(cand)
+            align = float(np.dot(new_normals[i], normals[cand]))
+            if align < 0.25:
+                continue
+            plane = normals[cand]
+            dist = float(np.abs((tri_pts - V_orig[F_orig[cand, 0]]) @ plane).mean())
+            score = dist * 1000.0 + (1.0 - align)
+            if score < best_score:
+                best_score, best = score, cand
+
+        o = F_orig[best]
+        a, b, c = V_orig[o[0]], V_orig[o[1]], V_orig[o[2]]
+        n = normals[best]
+        for vi in tri:
+            u, v, w = barycentric(V_new[vi], a, b, c, n)
+            uv = u * UV_orig[o[0]] + v * UV_orig[o[1]] + w * UV_orig[o[2]]
+            verts.append(V_new[vi])
+            uvs.append((uv[0] % 1.0, uv[1] % 1.0))
+
+    return np.array(verts), F_new, np.array(uvs)
 
 
 def write_obj(path, V, UV, F, N, mtl_name, material_names, face_material):
@@ -312,6 +411,18 @@ def bake(glb_path, out_dir, key, force_obj=False):
     sel = idx[np.arange(len(v2)), best]
     bad = ~np.isfinite(score[np.arange(len(v2)), best])
     sel[bad] = idx[bad, 0]
+
+    if USE_TEXTURE_BAKE and tex_big is not None:
+        # textured path: per-triangle UV transfer + the albedo as a texture
+        atlas = tex.resize((SCAN_TEX_SIZE, SCAN_TEX_SIZE), Image.LANCZOS)
+        atlas.save(os.path.join(out_dir, key + '_albedo.png'), optimize=True)
+
+        tv, tf, tuv = transfer_uv(V, F, UV, v2, f2)
+        tn = n2[f2].reshape(-1, 3)
+        path = os.path.join(out_dir, key + '.bytes')
+        size = write_fmsh_textured(path, tv, tn, tuv, tf)
+        print('    -> %s.bytes (%.2f MB, textured, %d verts)' % (key, size / 1048576.0, len(tv)))
+        return 'bytes'
 
     colour = smooth_colours(v2, f2, C[sel])
     path = os.path.join(out_dir, key + '.bytes')
