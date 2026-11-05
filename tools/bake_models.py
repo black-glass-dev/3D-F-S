@@ -235,7 +235,8 @@ def write_fmsh(path, V, N, C, F, flip=False):
     with open(path, 'wb') as f:
         f.write(b'FMSH')
         # 20-byte header: magic, version, flags, vertex count, tri count, index size
-        f.write(struct.pack('<HHIII', 1, 0, vcount, tcount, 1 if idx16 else 0))
+        # (the index size must be the BYTE size: 2 or 4)
+        f.write(struct.pack('<HHIII', 1, 0, vcount, tcount, 2 if idx16 else 4))
         buf = np.empty((vcount, 6), dtype=np.float32)
         buf[:, 0:3] = V
         buf[:, 3:6] = N

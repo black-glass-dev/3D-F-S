@@ -197,7 +197,16 @@ namespace FarmSim
             if (asset == null) return null;
 
             Mesh mesh = Parse(asset.bytes, key);
-            if (mesh != null) Meshes[key] = mesh;
+            if (mesh == null)
+            {
+                // A silent null here means the world quietly falls back to the
+                // procedural prop (that is how the house model went missing in
+                // v1.1.x) — make it shout in the device log instead.
+                Debug.LogError("[ModelLibrary] " + key + ".bytes exists but could not be parsed; " +
+                               "using the procedural fallback.");
+                return null;
+            }
+            Meshes[key] = mesh;
 
             // The bytes were copied into managed arrays; release the 2.5 MB blob.
             Resources.UnloadAsset(asset);
@@ -216,7 +225,9 @@ namespace FarmSim
             int vertexCount = ReadInt(bytes, 8);
             int triangleCount = ReadInt(bytes, 12);
             int indexSize = ReadInt(bytes, 16);
-            if (vertexCount <= 0 || triangleCount <= 0 || (indexSize != 2 && indexSize != 4)) return null;
+            if (vertexCount <= 0 || triangleCount <= 0) return null;
+            // v1 indexes are 2 or 4 bytes; v2 may also be 0 (non-indexed).
+            if (indexSize != 2 && indexSize != 4 && !(version == 2 && indexSize == 0)) return null;
 
             int stride = version == 2 ? VertexStrideUv : VertexStride;
             long expected = HeaderSize + (long)vertexCount * stride
