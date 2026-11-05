@@ -16,12 +16,15 @@ Shader "FarmSim/Lit"
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
         _Smoothness ("Smoothness", Range(0,1)) = 0.05
         _VertexTint ("Use Vertex Tint", Range(0,1)) = 0
+        _VertexColor ("Use Vertex Colour (RGB)", Range(0,1)) = 0
+        _Cull ("Cull Mode", Float) = 2
     }
 
     SubShader
     {
         Tags { "RenderType"="Opaque" }
         LOD 200
+        Cull [_Cull]
 
         CGPROGRAM
         #pragma surface surf Lambert addshadow fullforwardshadows
@@ -30,6 +33,7 @@ Shader "FarmSim/Lit"
         sampler2D _MainTex;
         fixed4 _Color;
         float _VertexTint;
+        float _VertexColor;
 
         struct Input
         {
@@ -41,7 +45,8 @@ Shader "FarmSim/Lit"
         {
             fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
             float tint = lerp(1.0, IN.color.r, _VertexTint);
-            o.Albedo = c.rgb * tint;
+            fixed3 vertex = lerp(fixed3(1, 1, 1), IN.color.rgb, _VertexColor);
+            o.Albedo = c.rgb * tint * vertex;
             o.Alpha = c.a;
         }
 

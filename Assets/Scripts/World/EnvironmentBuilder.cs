@@ -55,7 +55,7 @@ namespace FarmSim
             BuildHills();
             BuildPath();
             BuildHouse(new Vector3(-9.6f, 0f, 6.6f));
-            BuildBarn(new Vector3(10.2f, 0f, 6.2f));
+            BuildBarn(new Vector3(11.8f, 0f, 7.4f));
             BuildWindmill(new Vector3(12.4f, 0f, -4.0f));
             BuildPond(new Vector3(-11.6f, 0f, -4.8f));
             BuildTrees();
@@ -199,8 +199,8 @@ namespace FarmSim
         {
             var control = new[]
             {
-                new Vector3(-9.9f, 0f, 8.0f),
-                new Vector3(-7.8f, 0f, 7.6f),
+                new Vector3(-8.2f, 0f, 5.2f),
+                new Vector3(-7.2f, 0f, 6.2f),
                 new Vector3(-5.2f, 0f, 7.0f),
                 new Vector3(-2.6f, 0f, 6.2f),
                 new Vector3(-0.4f, 0f, 5.6f),
@@ -269,17 +269,29 @@ namespace FarmSim
 
         // ---------- buildings ----------
 
+        /// <summary>
+        /// Yaw that turns a building's front (+Z) towards the game camera.
+        /// The camera sits at focus + (18, 18, -18) (see CameraController), so
+        /// without this every model would show us its back wall.
+        /// </summary>
+        private static float FacingCamera(Vector3 position)
+        {
+            Vector3 toCamera = new Vector3(18f, 0f, -18f) - new Vector3(position.x, 0f, position.z);
+            return Mathf.Atan2(toCamera.x, toCamera.z) * Mathf.Rad2Deg;
+        }
+
         private void BuildHouse(Vector3 position)
         {
             var house = new GameObject("House");
             house.transform.SetParent(_staticRoot, false);
             house.transform.localPosition = new Vector3(position.x, TerrainShape.Height(position.x, position.z), position.z);
-            house.transform.localRotation = Quaternion.Euler(0f, 12f, 0f);
+            float houseYaw = FacingCamera(position);
+            house.transform.localRotation = Quaternion.Euler(0f, houseYaw, 0f);
 
             AddContactShadow(house.transform, new Vector3(0f, 0.02f, 0f), 4.6f);
 
             // an imported model wins over the procedural house, if one exists
-            if (ModelLibrary.Spawn("house", house.transform, Vector3.zero, 3.7f, 12f) != null)
+            if (ModelLibrary.Spawn("house", house.transform, Vector3.zero, 4.2f) != null)
                 return;
 
             AddBox(house.transform, new Vector3(0f, 0.14f, 0f), new Vector3(3.7f, 0.28f, 2.95f), _stone);
@@ -331,11 +343,12 @@ namespace FarmSim
             var barn = new GameObject("Barn");
             barn.transform.SetParent(_staticRoot, false);
             barn.transform.localPosition = new Vector3(position.x, TerrainShape.Height(position.x, position.z), position.z);
-            barn.transform.localRotation = Quaternion.Euler(0f, -14f, 0f);
+            float barnYaw = FacingCamera(position);
+            barn.transform.localRotation = Quaternion.Euler(0f, barnYaw, 0f);
 
-            AddContactShadow(barn.transform, new Vector3(0f, 0.02f, 0f), 4.2f);
+            AddContactShadow(barn.transform, new Vector3(0f, 0.02f, 0f), 6.0f);
 
-            if (ModelLibrary.Spawn("barn", barn.transform, Vector3.zero, 3.6f, -14f) != null)
+            if (ModelLibrary.Spawn("barn", barn.transform, Vector3.zero, 4.3f) != null)
                 return;
 
             AddBox(barn.transform, new Vector3(0f, 1.12f, 0f), new Vector3(3.1f, 2.0f, 2.6f), _barnRed);
@@ -762,9 +775,9 @@ namespace FarmSim
 
         private void BuildCrates()
         {
-            AddCrate(new Vector3(8.1f, 0f, 4.6f), 0.6f);
-            AddCrate(new Vector3(8.65f, 0f, 5.1f), 0.5f);
-            AddCrate(new Vector3(8.35f, 0.55f, 4.85f), 0.45f);
+            AddCrate(new Vector3(7.25f, 0f, 5.0f), 0.6f);
+            AddCrate(new Vector3(7.8f, 0f, 5.5f), 0.5f);
+            AddCrate(new Vector3(7.5f, 0.55f, 5.25f), 0.45f);
         }
 
         private void AddCrate(Vector3 position, float size)
