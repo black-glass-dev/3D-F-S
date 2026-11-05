@@ -34,6 +34,7 @@ namespace FarmSim
         private Button _langButton;
         private Button _soundButton;
         private Button _vibrationButton;
+        private Button _lightButton;
         private Button _nextDayButton;
         private readonly List<Button> _toolButtons = new List<Button>();
         private Button _marketButton;
@@ -210,6 +211,11 @@ namespace FarmSim
             _dayProgressFill = fill;
 
             // ---- right side buttons ----
+            _lightButton = UiFactory.CreateButton(bar.transform, "LightButton",
+                new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-770f, -36f), new Vector2(-670f, 36f),
+                new Color(0.19f, 0.24f, 0.19f), "LIGHT", GameFonts.SemiBold, 24, OnLightClicked);
+
             _soundButton = UiFactory.CreateButton(bar.transform, "SoundButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-660f, -36f), new Vector2(-560f, 36f),
@@ -325,7 +331,7 @@ namespace FarmSim
             // tiny build stamp so a new APK can be recognised at a glance
             var version = UiFactory.CreateText(bar.transform, "Version", GameFonts.Regular, 20,
                 TextAnchor.LowerRight, new Color(0.78f, 0.80f, 0.74f, 0.55f));
-            version.text = "v1.2.2";
+            version.text = "v1.3.0";
             UiFactory.Place(version.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
                 new Vector2(-150f, 4f), new Vector2(-24f, 30f));
         }
@@ -429,6 +435,14 @@ namespace FarmSim
             RefreshAll();
         }
 
+        private void OnLightClicked()
+        {
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayTap();
+            LookSettings.Cycle();
+            ShowToast(Localization.T("light_toast") + ": " + LookSettings.Label);
+            RefreshAll();
+        }
+
         private void OnVibrationClicked()
         {
             if (SfxManager.Instance != null)
@@ -513,6 +527,22 @@ namespace FarmSim
             {
                 var label = _nextDayButton.GetComponentInChildren<Text>();
                 if (label != null) label.text = Localization.T("next_day");
+            }
+
+            if (_lightButton != null)
+            {
+                var label = _lightButton.GetComponentInChildren<Text>();
+                if (label != null) label.text = Localization.T("light_btn");
+                var img = _lightButton.GetComponent<Image>();
+                if (img != null)
+                {
+                    switch (LookSettings.Step)
+                    {
+                        case 0: img.color = new Color(0.17f, 0.19f, 0.22f, 0.95f); break;
+                        case 1: img.color = new Color(0.19f, 0.24f, 0.19f, 0.95f); break;
+                        default: img.color = new Color(0.55f, 0.47f, 0.24f, 0.98f); break;
+                    }
+                }
             }
 
             if (_vibrationButton != null)

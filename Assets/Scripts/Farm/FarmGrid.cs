@@ -131,6 +131,29 @@ namespace FarmSim
             return list;
         }
 
+        /// <summary>
+        /// v1.3.0: advance every growing plot by the time spent outside the app.
+        /// Capped at six hours so a long break does not hand out a whole week of
+        /// growth, and returns how many plots ripened.
+        /// </summary>
+        public int ApplyOfflineGrowth(long savedAtUnix)
+        {
+            if (savedAtUnix <= 0) return 0;
+
+            long now = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            long elapsed = now - savedAtUnix;
+            if (elapsed < 20) return 0;
+            if (elapsed > 6 * 3600) elapsed = 6 * 3600;
+
+            int ripened = 0;
+            for (int i = 0; i < _plots.Count; i++)
+            {
+                if (_plots[i] != null && _plots[i].AddOfflineGrowth(elapsed))
+                    ripened++;
+            }
+            return ripened;
+        }
+
         public void LoadSaveData(List<PlotSaveData> data)
         {
             if (data == null) return;

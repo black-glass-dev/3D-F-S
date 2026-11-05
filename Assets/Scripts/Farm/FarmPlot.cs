@@ -220,6 +220,33 @@ namespace FarmSim
             ApplyVisual(true);
         }
 
+        /// <summary>
+        /// v1.3.0: catch a growing crop up on the wall-clock time the app spent
+        /// closed. Ready plots are announced silently (no sound storm when a
+        /// dozen fields ripen at once on load). Returns true if it ripened.
+        /// </summary>
+        public bool AddOfflineGrowth(float seconds)
+        {
+            if (Locked || State != PlotState.Growing || seconds <= 0f) return false;
+
+            var crop = CropDatabase.Get(CropIndex);
+            if (crop == null) return false;
+
+            float speed = Watered ? 1.8f : 1f;
+            Progress = Mathf.Min(1f, Progress + (seconds * speed) / Mathf.Max(1f, crop.GrowSeconds));
+
+            bool ripened = Progress >= 1f;
+            if (ripened)
+            {
+                Progress = 1f;
+                State = PlotState.Ready;
+                _readySignalled = true;
+                _sparkleTimer = 2f;
+            }
+            ApplyVisual(true);
+            return ripened;
+        }
+
         public void OnTap()
         {
             var manager = GameManager.Instance;

@@ -313,6 +313,7 @@ namespace FarmSim
                 Tool = ToolIndex,
                 Well = HasWell,
                 Sprinkler = HasSprinkler,
+                SavedAt = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Store = new System.Collections.Generic.List<int>(Store)
             };
             if (_grid != null)
@@ -349,8 +350,10 @@ namespace FarmSim
         private void ApplyTimeOfDay()
         {
             float t = DayProgress01;
-            // smooth dawn -> day -> dusk curve
-            float daylight = Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI);
+            // smooth dawn -> day -> dusk curve. v1.3.0: the trough now bottoms
+            // out at 0.55 instead of 0, so dawn and dusk stay readable instead
+            // of turning the props into black silhouettes.
+            float daylight = Mathf.Lerp(0.55f, 1f, Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI));
 
             if (_skyMaterial != null)
             {
@@ -360,14 +363,19 @@ namespace FarmSim
                     _skyMaterial.SetColor("_BottomColor", EvalThree(t, SkyBottomDawn, SkyBottomDay, SkyBottomDusk));
             }
 
+            // v1.3.0: the dusk end used to drop to almost night (0.40 ambient,
+            // 0.48 sun) and every prop read as a black silhouette. The floor is
+            // lifted and the player's light setting scales the whole rig.
+            float lightMul = LookSettings.Multiplier;
+
             RenderSettings.ambientLight = Color.Lerp(
-                new Color(0.40f, 0.38f, 0.45f),
-                new Color(0.50f, 0.53f, 0.58f),
-                daylight);
+                new Color(0.52f, 0.50f, 0.58f),
+                new Color(0.62f, 0.65f, 0.70f),
+                daylight) * lightMul;
 
             RenderSettings.fogColor = Color.Lerp(
-                new Color(0.40f, 0.36f, 0.42f),
-                new Color(0.70f, 0.75f, 0.78f),
+                new Color(0.52f, 0.48f, 0.55f),
+                new Color(0.74f, 0.79f, 0.82f),
                 daylight);
 
             if (_sun != null)
@@ -376,7 +384,7 @@ namespace FarmSim
                 _sun.transform.rotation = Quaternion.Euler(angle, 40f, 0f);
                 // Exposure is deliberately conservative: 1.25 blew the
                 // path and pond out to white in v1.0.1.
-                _sun.intensity = Mathf.Lerp(0.48f, 1.02f, daylight);
+                _sun.intensity = Mathf.Lerp(0.68f, 1.05f, daylight) * lightMul;
                 _sun.color = Color.Lerp(
                     new Color(1f, 0.66f, 0.44f),
                     new Color(1f, 0.95f, 0.87f),

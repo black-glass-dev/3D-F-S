@@ -34,6 +34,11 @@ namespace FarmSim
         public bool Well = false;
         public bool Sprinkler = false;
 
+        // --- v1.3 ---
+        /// <summary>Unix seconds at the moment of saving; crops keep growing
+        /// while the app is closed (capped in FarmGrid).</summary>
+        public long SavedAt = 0;
+
         public List<PlotSaveData> Plots = new List<PlotSaveData>();
     }
 
