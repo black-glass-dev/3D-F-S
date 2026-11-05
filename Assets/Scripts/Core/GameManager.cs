@@ -361,8 +361,8 @@ namespace FarmSim
             }
 
             RenderSettings.ambientLight = Color.Lerp(
-                new Color(0.32f, 0.31f, 0.38f),
-                new Color(0.42f, 0.46f, 0.52f),
+                new Color(0.40f, 0.38f, 0.45f),
+                new Color(0.50f, 0.53f, 0.58f),
                 daylight);
 
             RenderSettings.fogColor = Color.Lerp(
@@ -376,7 +376,7 @@ namespace FarmSim
                 _sun.transform.rotation = Quaternion.Euler(angle, 40f, 0f);
                 // Exposure is deliberately conservative: 1.25 blew the
                 // path and pond out to white in v1.0.1.
-                _sun.intensity = Mathf.Lerp(0.34f, 0.95f, daylight);
+                _sun.intensity = Mathf.Lerp(0.48f, 1.02f, daylight);
                 _sun.color = Color.Lerp(
                     new Color(1f, 0.66f, 0.44f),
                     new Color(1f, 0.95f, 0.87f),

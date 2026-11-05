@@ -226,10 +226,12 @@ def write_fmsh(path, V, N, C, F, flip=False):
               triCount * 3 * indexSize indices
     """
     if flip:                        # glTF (right handed) -> Unity (left handed)
-        # Mirroring X turns the outward CCW winding into CW, which is Unity's
-        # front-face convention -- so the index order must stay untouched.
+        # Mirroring X reverses the facing of every triangle, so the index order
+        # has to be flipped as well. (v1.2.0 shipped without this and the house
+        # rendered inside-out: you could see the back of the roof planks.)
         V = V * np.array([-1.0, 1.0, 1.0])
         N = N * np.array([-1.0, 1.0, 1.0])
+        F = F[:, ::-1]
     vcount, tcount = len(V), len(F)
     idx16 = vcount <= 65535
     with open(path, 'wb') as f:

@@ -21,7 +21,7 @@ namespace FarmSim.Editor
     {
         private const string ScenePath = "Assets/Scenes/Main.unity";
         private const string ApkPath = "build/Android/FarmSim.apk";
-        private const string VERSION = "1.2.1";
+        private const string VERSION = "1.2.2";
 
         [MenuItem("FarmSim/Build Android APK (CI)")]
         public static void PerformBuild()
@@ -112,10 +112,10 @@ namespace FarmSim.Editor
             PlayerSettings.bundleVersion = VERSION;
 
             PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.farmsim.threedgame");
-            // Linear lighting: the single biggest "cinematic instead of washed
-            // out" switch available on mobile (gamma space flattened every
-            // shadow into the mid tones).
-            PlayerSettings.colorSpace = ColorSpace.Linear;
+            // NOTE: stay in Gamma. Linear looked far too dark on device (whole
+            // props rendering near black) because the art was authored in gamma;
+            // the "cinematic" lift comes from the lighting/fog/post instead.
+            PlayerSettings.colorSpace = ColorSpace.Gamma;
 
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
