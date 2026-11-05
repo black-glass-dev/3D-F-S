@@ -15,6 +15,7 @@ namespace FarmSim
         private readonly List<Renderer> _leaves = new List<Renderer>();
         private readonly List<Transform> _fruits = new List<Transform>();
         private readonly List<Renderer> _fruitRenderers = new List<Renderer>();
+        private readonly List<Vector3> _fruitBaseScales = new List<Vector3>();
         private readonly int _cropIndex;
 
         private CropVisual(int cropIndex, GameObject root)
@@ -30,6 +31,8 @@ namespace FarmSim
             root.transform.localPosition = Vector3.zero;
 
             var visual = new CropVisual(cropIndex, root);
+            CropDatabase.Get(cropIndex); // keep index validation in one place
+
             switch (cropIndex)
             {
                 case 1:
@@ -38,11 +41,59 @@ namespace FarmSim
                 case 2:
                     visual.BuildPumpkin();
                     break;
+                case 3:
+                    visual.BuildCarrot();
+                    break;
+                case 4:
+                    visual.BuildChili();
+                    break;
+                case 5:
+                    visual.BuildCorn();
+                    break;
+                case 6:
+                    visual.BuildRice();
+                    break;
+                case 7:
+                    visual.BuildJute();
+                    break;
                 default:
                     visual.BuildWheat();
                     break;
             }
             return visual;
+        }
+
+        // ---------- helpers ----------
+
+        private Renderer AddLeaf(PrimitiveType type, Vector3 position, Vector3 scale, Color color,
+            float yRotation = 0f)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = "Leaf";
+            go.transform.SetParent(Root.transform, false);
+            go.transform.localPosition = position;
+            go.transform.localScale = scale;
+            go.transform.localRotation = Quaternion.Euler(0f, yRotation, 0f);
+            Object.Destroy(go.GetComponent<Collider>());
+            var renderer = go.GetComponent<Renderer>();
+            renderer.sharedMaterial = MaterialCache.Get(color, SurfacePattern.Leaf);
+            _leaves.Add(renderer);
+            return renderer;
+        }
+
+        private void AddFruit(PrimitiveType type, Vector3 position, Vector3 scale, Color color)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = "Fruit";
+            go.transform.SetParent(Root.transform, false);
+            go.transform.localPosition = position;
+            go.transform.localScale = scale;
+            Object.Destroy(go.GetComponent<Collider>());
+            var renderer = go.GetComponent<Renderer>();
+            renderer.sharedMaterial = MaterialCache.Get(color);
+            _fruits.Add(go.transform);
+            _fruitRenderers.Add(renderer);
+            _fruitBaseScales.Add(scale);
         }
 
         // ---------- crop shapes ----------
@@ -69,18 +120,8 @@ namespace FarmSim
                 stemRenderer.sharedMaterial = MaterialCache.Get(greenDark, SurfacePattern.Leaf);
                 _leaves.Add(stemRenderer);
 
-                // grain head (ripens to gold)
-                var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                head.name = "Head";
-                head.transform.SetParent(Root.transform, false);
-                head.transform.localPosition = pos + Vector3.up * 0.58f;
-                head.transform.localScale = new Vector3(0.09f, 0.16f, 0.09f);
-                Object.Destroy(head.GetComponent<Collider>());
-                var headRenderer = head.GetComponent<Renderer>();
-                headRenderer.sharedMaterial = MaterialCache.Get(green, SurfacePattern.Leaf);
-                _leaves.Add(headRenderer);
-                _fruits.Add(head.transform);
-                _fruitRenderers.Add(headRenderer);
+                AddFruit(PrimitiveType.Sphere, pos + Vector3.up * 0.58f,
+                    new Vector3(0.09f, 0.16f, 0.09f), green);
             }
         }
 
@@ -89,25 +130,8 @@ namespace FarmSim
             var leaf = new Color(0.30f, 0.42f, 0.25f);
             var leafLight = new Color(0.38f, 0.52f, 0.29f);
 
-            var bush = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            bush.name = "Bush";
-            bush.transform.SetParent(Root.transform, false);
-            bush.transform.localPosition = Vector3.up * 0.26f;
-            bush.transform.localScale = new Vector3(0.62f, 0.5f, 0.62f);
-            Object.Destroy(bush.GetComponent<Collider>());
-            var bushRenderer = bush.GetComponent<Renderer>();
-            bushRenderer.sharedMaterial = MaterialCache.Get(leaf, SurfacePattern.Leaf);
-            _leaves.Add(bushRenderer);
-
-            var bushTop = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            bushTop.name = "BushTop";
-            bushTop.transform.SetParent(Root.transform, false);
-            bushTop.transform.localPosition = new Vector3(0.1f, 0.44f, -0.05f);
-            bushTop.transform.localScale = new Vector3(0.42f, 0.36f, 0.42f);
-            Object.Destroy(bushTop.GetComponent<Collider>());
-            var bushTopRenderer = bushTop.GetComponent<Renderer>();
-            bushTopRenderer.sharedMaterial = MaterialCache.Get(leafLight, SurfacePattern.Leaf);
-            _leaves.Add(bushTopRenderer);
+            AddLeaf(PrimitiveType.Sphere, Vector3.up * 0.26f, new Vector3(0.62f, 0.5f, 0.62f), leaf);
+            AddLeaf(PrimitiveType.Sphere, new Vector3(0.1f, 0.44f, -0.05f), new Vector3(0.42f, 0.36f, 0.42f), leafLight);
 
             var offsets = new[]
             {
@@ -116,19 +140,9 @@ namespace FarmSim
                 new Vector3(0.04f, 0.20f, -0.26f)
             };
 
+            var ripe = CropDatabase.Get(_cropIndex).RipeColor;
             for (int i = 0; i < offsets.Length; i++)
-            {
-                var tomato = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                tomato.name = "Tomato";
-                tomato.transform.SetParent(Root.transform, false);
-                tomato.transform.localPosition = offsets[i];
-                tomato.transform.localScale = Vector3.one * 0.17f;
-                Object.Destroy(tomato.GetComponent<Collider>());
-                var renderer = tomato.GetComponent<Renderer>();
-                renderer.sharedMaterial = MaterialCache.Get(CropDatabase.Get(_cropIndex).RipeColor);
-                _fruits.Add(tomato.transform);
-                _fruitRenderers.Add(renderer);
-            }
+                AddFruit(PrimitiveType.Sphere, offsets[i], Vector3.one * 0.17f, ripe);
         }
 
         private void BuildPumpkin()
@@ -139,37 +153,140 @@ namespace FarmSim
             {
                 float angle = i * 90f * Mathf.Deg2Rad;
                 var pos = new Vector3(Mathf.Cos(angle) * 0.24f, 0.12f, Mathf.Sin(angle) * 0.24f);
+                AddLeaf(PrimitiveType.Sphere, pos, new Vector3(0.34f, 0.16f, 0.34f), leaf);
+            }
 
-                var leafBall = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                leafBall.name = "Leaf";
-                leafBall.transform.SetParent(Root.transform, false);
-                leafBall.transform.localPosition = pos;
-                leafBall.transform.localScale = new Vector3(0.34f, 0.16f, 0.34f);
-                Object.Destroy(leafBall.GetComponent<Collider>());
-                var renderer = leafBall.GetComponent<Renderer>();
+            var ripe = CropDatabase.Get(_cropIndex).RipeColor;
+            AddFruit(PrimitiveType.Sphere, new Vector3(-0.12f, 0.16f, 0.06f), new Vector3(0.3f, 0.22f, 0.3f), ripe);
+            AddFruit(PrimitiveType.Sphere, new Vector3(0.22f, 0.14f, -0.12f), new Vector3(0.26f, 0.19f, 0.26f), ripe);
+        }
+
+        private void BuildCarrot()
+        {
+            var leaf = new Color(0.34f, 0.52f, 0.28f);
+            var leafDark = new Color(0.26f, 0.42f, 0.24f);
+
+            // feathery fronds
+            for (int i = 0; i < 6; i++)
+            {
+                float angle = i * 60f * Mathf.Deg2Rad;
+                var pos = new Vector3(Mathf.Cos(angle) * 0.07f, 0.24f, Mathf.Sin(angle) * 0.07f);
+                var frond = AddLeaf(PrimitiveType.Cube, pos, new Vector3(0.05f, 0.36f, 0.12f),
+                    i % 2 == 0 ? leaf : leafDark, angle * Mathf.Rad2Deg);
+                frond.transform.localRotation = Quaternion.Euler(Mathf.Cos(angle) * 18f, angle * Mathf.Rad2Deg,
+                    Mathf.Sin(angle) * 18f);
+            }
+
+            // orange shoulders poking out of the soil
+            var ripe = CropDatabase.Get(_cropIndex).RipeColor;
+            AddFruit(PrimitiveType.Sphere, new Vector3(0.05f, 0.10f, 0.03f), new Vector3(0.17f, 0.14f, 0.17f), ripe);
+            AddFruit(PrimitiveType.Sphere, new Vector3(-0.11f, 0.09f, -0.08f), new Vector3(0.14f, 0.12f, 0.14f), ripe);
+        }
+
+        private void BuildChili()
+        {
+            var leaf = new Color(0.28f, 0.40f, 0.24f);
+
+            AddLeaf(PrimitiveType.Sphere, Vector3.up * 0.22f, new Vector3(0.52f, 0.42f, 0.52f), leaf);
+            AddLeaf(PrimitiveType.Sphere, new Vector3(0.14f, 0.38f, 0.1f), new Vector3(0.34f, 0.3f, 0.34f), leaf);
+
+            var ripe = CropDatabase.Get(_cropIndex).RipeColor;
+            AddFruit(PrimitiveType.Sphere, new Vector3(0.18f, 0.32f, 0.16f), new Vector3(0.08f, 0.19f, 0.08f), ripe);
+            AddFruit(PrimitiveType.Sphere, new Vector3(-0.16f, 0.28f, 0.12f), new Vector3(0.08f, 0.17f, 0.08f), ripe);
+            AddFruit(PrimitiveType.Sphere, new Vector3(0.02f, 0.34f, -0.19f), new Vector3(0.08f, 0.18f, 0.08f), ripe);
+        }
+
+        private void BuildCorn()
+        {
+            var stalk = new Color(0.40f, 0.54f, 0.28f);
+            var leaf = new Color(0.34f, 0.50f, 0.26f);
+
+            var stem = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            stem.name = "Stalk";
+            stem.transform.SetParent(Root.transform, false);
+            stem.transform.localPosition = Vector3.up * 0.42f;
+            stem.transform.localScale = new Vector3(0.06f, 0.42f, 0.06f);
+            Object.Destroy(stem.GetComponent<Collider>());
+            var stemRenderer = stem.GetComponent<Renderer>();
+            stemRenderer.sharedMaterial = MaterialCache.Get(stalk, SurfacePattern.Leaf);
+            _leaves.Add(stemRenderer);
+
+            // long drooping leaves
+            for (int i = 0; i < 4; i++)
+            {
+                float angle = i * 90f + 20f;
+                var rad = angle * Mathf.Deg2Rad;
+                var pos = new Vector3(Mathf.Cos(rad) * 0.16f, 0.34f + i * 0.06f, Mathf.Sin(rad) * 0.16f);
+                var leafRenderer = AddLeaf(PrimitiveType.Cube, pos, new Vector3(0.42f, 0.03f, 0.14f), leaf, angle);
+                leafRenderer.transform.localRotation = Quaternion.Euler(0f, angle, -18f);
+            }
+
+            // two cobs
+            var ripe = CropDatabase.Get(_cropIndex).RipeColor;
+            AddFruit(PrimitiveType.Sphere, new Vector3(0.14f, 0.44f, 0.04f), new Vector3(0.11f, 0.22f, 0.11f), ripe);
+            AddFruit(PrimitiveType.Sphere, new Vector3(-0.12f, 0.52f, -0.03f), new Vector3(0.1f, 0.2f, 0.1f), ripe);
+        }
+
+        private void BuildRice()
+        {
+            var green = new Color(0.44f, 0.56f, 0.32f);
+            var greenDark = new Color(0.34f, 0.46f, 0.26f);
+
+            for (int i = 0; i < 7; i++)
+            {
+                float angle = i * 51f * Mathf.Deg2Rad;
+                float radius = 0.06f + (i % 3) * 0.05f;
+                var pos = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+
+                var stem = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                stem.name = "Stem";
+                stem.transform.SetParent(Root.transform, false);
+                stem.transform.localPosition = pos + Vector3.up * 0.34f;
+                stem.transform.localScale = new Vector3(0.022f, 0.34f, 0.022f);
+                stem.transform.localRotation = Quaternion.Euler(Random.Range(-4f, 4f), 0f, Random.Range(-4f, 4f));
+                Object.Destroy(stem.GetComponent<Collider>());
+                var renderer = stem.GetComponent<Renderer>();
+                renderer.sharedMaterial = MaterialCache.Get(greenDark, SurfacePattern.Leaf);
+                _leaves.Add(renderer);
+
+                AddFruit(PrimitiveType.Sphere, pos + Vector3.up * 0.70f,
+                    new Vector3(0.05f, 0.13f, 0.05f), CropDatabase.Get(_cropIndex).RipeColor);
+            }
+
+            AddLeaf(PrimitiveType.Sphere, new Vector3(0f, 0.18f, 0f), new Vector3(0.4f, 0.16f, 0.4f), green);
+        }
+
+        private void BuildJute()
+        {
+            var leaf = new Color(0.32f, 0.46f, 0.26f);
+            var leafLight = new Color(0.40f, 0.54f, 0.30f);
+
+            for (int i = 0; i < 3; i++)
+            {
+                float angle = i * 120f * Mathf.Deg2Rad;
+                var pos = new Vector3(Mathf.Cos(angle) * 0.1f, 0f, Mathf.Sin(angle) * 0.1f);
+
+                var stem = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                stem.name = "Stem";
+                stem.transform.SetParent(Root.transform, false);
+                stem.transform.localPosition = pos + Vector3.up * 0.4f;
+                stem.transform.localScale = new Vector3(0.045f, 0.4f, 0.045f);
+                stem.transform.localRotation = Quaternion.Euler(Random.Range(-5f, 5f), 0f, Random.Range(-5f, 5f));
+                Object.Destroy(stem.GetComponent<Collider>());
+                var renderer = stem.GetComponent<Renderer>();
                 renderer.sharedMaterial = MaterialCache.Get(leaf, SurfacePattern.Leaf);
                 _leaves.Add(renderer);
+
+                // broad soft leaves
+                AddLeaf(PrimitiveType.Sphere, pos + new Vector3(0.1f, 0.44f, 0.02f),
+                    new Vector3(0.3f, 0.05f, 0.22f), leafLight, angle * Mathf.Rad2Deg);
+                AddLeaf(PrimitiveType.Sphere, pos + new Vector3(-0.08f, 0.62f, -0.05f),
+                    new Vector3(0.26f, 0.05f, 0.2f), leaf, angle * Mathf.Rad2Deg + 60f);
             }
 
-            var offsets = new[]
-            {
-                new Vector3(-0.12f, 0.16f, 0.06f),
-                new Vector3(0.22f, 0.14f, -0.12f)
-            };
-
-            for (int i = 0; i < offsets.Length; i++)
-            {
-                var pumpkin = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                pumpkin.name = "Pumpkin";
-                pumpkin.transform.SetParent(Root.transform, false);
-                pumpkin.transform.localPosition = offsets[i];
-                pumpkin.transform.localScale = new Vector3(0.3f, 0.22f, 0.3f);
-                Object.Destroy(pumpkin.GetComponent<Collider>());
-                var renderer = pumpkin.GetComponent<Renderer>();
-                renderer.sharedMaterial = MaterialCache.Get(CropDatabase.Get(_cropIndex).RipeColor);
-                _fruits.Add(pumpkin.transform);
-                _fruitRenderers.Add(renderer);
-            }
+            // the ripening stems turn pale green
+            var ripe = CropDatabase.Get(_cropIndex).RipeColor;
+            AddFruit(PrimitiveType.Sphere, new Vector3(0f, 0.82f, 0f), new Vector3(0.14f, 0.12f, 0.14f), ripe);
         }
 
         // ---------- animation ----------
@@ -195,7 +312,7 @@ namespace FarmSim
                 if (!showFruit) continue;
 
                 float s = Mathf.Lerp(0.35f, 1f, fruitT);
-                fruit.localScale = fruitBaseScale(i) * s;
+                fruit.localScale = _fruitBaseScales[i] * s;
                 var renderer = _fruitRenderers[i];
                 if (renderer != null)
                 {
@@ -208,17 +325,6 @@ namespace FarmSim
             {
                 float sway = Mathf.Sin(Time.time * 2.4f) * 2.5f;
                 Root.transform.localRotation = Quaternion.Euler(0f, sway, 0f);
-            }
-        }
-
-        /// <summary>Small per-part base scale, kept so the growth lerp is smooth.</summary>
-        private Vector3 fruitBaseScale(int index)
-        {
-            switch (_cropIndex)
-            {
-                case 1: return Vector3.one * 0.17f;
-                case 2: return new Vector3(0.3f, 0.22f, 0.3f);
-                default: return new Vector3(0.09f, 0.16f, 0.09f);
             }
         }
 

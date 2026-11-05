@@ -64,8 +64,8 @@ namespace FarmSim
             BuildFlowers();
             BuildGrassTufts();
             BuildFence();
-            BuildScarecrow(new Vector3(-4.8f, 0f, 4.6f));
-            BuildSign(new Vector3(4.1f, 0f, 4.8f));
+            BuildScarecrow(new Vector3(-6.4f, 0f, 5.4f));
+            BuildSign(new Vector3(6.2f, 0f, 5.4f));
             BuildCrates();
             BuildClouds();
 
@@ -200,11 +200,11 @@ namespace FarmSim
             var control = new[]
             {
                 new Vector3(-9.9f, 0f, 8.0f),
-                new Vector3(-8.0f, 0f, 7.3f),
-                new Vector3(-5.4f, 0f, 6.2f),
-                new Vector3(-3.0f, 0f, 4.9f),
-                new Vector3(-0.6f, 0f, 4.0f),
-                new Vector3(1.6f, 0f, 3.4f)
+                new Vector3(-7.8f, 0f, 7.6f),
+                new Vector3(-5.2f, 0f, 7.0f),
+                new Vector3(-2.6f, 0f, 6.2f),
+                new Vector3(-0.4f, 0f, 5.6f),
+                new Vector3(1.4f, 0f, 5.2f)
             };
 
             var points = new List<Vector3>();
@@ -278,6 +278,10 @@ namespace FarmSim
 
             AddContactShadow(house.transform, new Vector3(0f, 0.02f, 0f), 4.6f);
 
+            // an imported model wins over the procedural house, if one exists
+            if (ModelLibrary.Spawn("house", house.transform, Vector3.zero, 3.7f, 12f) != null)
+                return;
+
             AddBox(house.transform, new Vector3(0f, 0.14f, 0f), new Vector3(3.7f, 0.28f, 2.95f), _stone);
             AddBox(house.transform, new Vector3(0f, 1.24f, 0f), new Vector3(3.4f, 1.94f, 2.7f), _walls);
 
@@ -331,6 +335,9 @@ namespace FarmSim
 
             AddContactShadow(barn.transform, new Vector3(0f, 0.02f, 0f), 4.2f);
 
+            if (ModelLibrary.Spawn("barn", barn.transform, Vector3.zero, 3.6f, -14f) != null)
+                return;
+
             AddBox(barn.transform, new Vector3(0f, 1.12f, 0f), new Vector3(3.1f, 2.0f, 2.6f), _barnRed);
             AddMesh(barn.transform, "Roof", MeshFactory.Roof, _roofBrown,
                 new Vector3(0f, 2.1f, 0f), new Vector3(3.62f, 1.4f, 3.06f), 0f);
@@ -365,6 +372,9 @@ namespace FarmSim
             mill.transform.localPosition = new Vector3(position.x, TerrainShape.Height(position.x, position.z), position.z);
 
             AddContactShadow(mill.transform, new Vector3(0f, 0.02f, 0f), 3.2f);
+
+            if (ModelLibrary.Spawn("windmill", mill.transform, Vector3.zero, 5.0f, 40f) != null)
+                return;
 
             // tapered tower
             AddMesh(mill.transform, "Tower", MeshFactory.Trunk, _walls,
@@ -500,6 +510,9 @@ namespace FarmSim
 
             AddContactShadow(tree.transform, new Vector3(0f, 0.02f, 0f), 2.6f);
 
+            if (ModelLibrary.Spawn("tree", tree.transform, Vector3.zero, 4.6f, Random.Range(0f, 360f)) != null)
+                return;
+
             AddMesh(tree.transform, "Trunk", MeshFactory.Trunk, _trunk,
                 new Vector3(0f, 0f, 0f), new Vector3(0.46f, 1.9f, 0.46f), 0f);
 
@@ -522,6 +535,9 @@ namespace FarmSim
 
             AddContactShadow(tree.transform, new Vector3(0f, 0.02f, 0f), 2.4f);
 
+            if (ModelLibrary.Spawn("pine", tree.transform, Vector3.zero, 4.8f, Random.Range(0f, 360f)) != null)
+                return;
+
             AddMesh(tree.transform, "Trunk", MeshFactory.Trunk, _trunk,
                 new Vector3(0f, 0f, 0f), new Vector3(0.36f, 1.1f, 0.36f), 0f);
             AddMesh(tree.transform, "Layer1", MeshFactory.Cone, _leafC,
@@ -541,6 +557,9 @@ namespace FarmSim
             tree.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
 
             AddContactShadow(tree.transform, new Vector3(0f, 0.02f, 0f), 2.2f);
+
+            if (ModelLibrary.Spawn("poplar", tree.transform, Vector3.zero, 5.0f, Random.Range(0f, 360f)) != null)
+                return;
 
             AddMesh(tree.transform, "Trunk", MeshFactory.Trunk, _trunk,
                 new Vector3(0f, 0f, 0f), new Vector3(0.34f, 1.4f, 0.34f), 0f);
@@ -591,8 +610,15 @@ namespace FarmSim
                 var x = positions[i].x;
                 var z = positions[i].z;
                 float size = Random.Range(0.5f, 1.0f);
-                AddMesh(_staticRoot, "Rock", MeshFactory.Rock(i), _rock,
-                    new Vector3(x, TerrainShape.Height(x, z) + size * 0.18f, z),
+                var rockRoot = new GameObject("Rock");
+                rockRoot.transform.SetParent(_staticRoot, false);
+                rockRoot.transform.localPosition = new Vector3(x, TerrainShape.Height(x, z), z);
+                if (ModelLibrary.Spawn("rock", rockRoot.transform, Vector3.zero, size * 0.8f,
+                        Random.Range(0f, 360f), _rock) != null)
+                    continue;
+
+                AddMesh(rockRoot.transform, "RockA", MeshFactory.Rock(i), _rock,
+                    new Vector3(0f, size * 0.18f, 0f),
                     new Vector3(size, size * 0.72f, size * Random.Range(0.85f, 1.15f)),
                     Random.Range(0f, 360f));
             }
@@ -710,6 +736,9 @@ namespace FarmSim
 
             AddContactShadow(scarecrow.transform, new Vector3(0f, 0.02f, 0f), 1.5f);
 
+            if (ModelLibrary.Spawn("scarecrow", scarecrow.transform, Vector3.zero, 2.2f, 18f) != null)
+                return;
+
             AddBox(scarecrow.transform, new Vector3(0f, 0.82f, 0f), new Vector3(0.12f, 1.64f, 0.12f), _woodDark);
             AddBox(scarecrow.transform, new Vector3(0f, 1.24f, 0f), new Vector3(1.35f, 0.11f, 0.11f), _woodDark);
             AddBox(scarecrow.transform, new Vector3(0f, 1.12f, 0.03f), new Vector3(0.78f, 0.8f, 0.26f), _flowerC);
@@ -733,9 +762,9 @@ namespace FarmSim
 
         private void BuildCrates()
         {
-            AddCrate(new Vector3(7.9f, 0f, 3.9f), 0.6f);
-            AddCrate(new Vector3(8.45f, 0f, 4.4f), 0.5f);
-            AddCrate(new Vector3(8.15f, 0.55f, 4.15f), 0.45f);
+            AddCrate(new Vector3(8.1f, 0f, 4.6f), 0.6f);
+            AddCrate(new Vector3(8.65f, 0f, 5.1f), 0.5f);
+            AddCrate(new Vector3(8.35f, 0.55f, 4.85f), 0.45f);
         }
 
         private void AddCrate(Vector3 position, float size)

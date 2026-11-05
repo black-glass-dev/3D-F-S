@@ -29,7 +29,7 @@ namespace FarmSim
             { "pumpkin", "Pumpkin" },
             { "cost", "Cost" },
             { "sell", "Sell" },
-            { "hint_empty", "Tap a soil plot to plant. Tap a growing crop to water it. Tap a golden crop to harvest!" },
+            { "hint_empty", "Plant a seed, water it, harvest it — then sell the harvest in the Market!" },
             { "hint_growing", "Tap a growing crop to water it (grows faster!)" },
             { "hint_ready", "Tap a golden crop to harvest!" },
             { "not_enough_coins", "Not enough coins!" },
@@ -44,11 +44,36 @@ namespace FarmSim
                 "1. Pick a seed below.\n" +
                 "2. Tap a soil plot to plant it.\n" +
                 "3. Tap the growing crop to water it — it grows 1.8x faster.\n" +
-                "4. Tap the golden crop to harvest and earn coins.\n\n" +
+                "4. Tap the golden crop to harvest — it goes to your barn.\n" +
+                "5. Open the Market and sell for coins!\n\n" +
                 "Drag to move the camera, pinch to zoom, double tap to reset." },
             { "tut_ok", "Let's farm!" },
             { "ready", "Ready to harvest" },
-            { "no_coins_short", "Need more coins" }
+            { "no_coins_short", "Need more coins" },
+
+            // --- v1.1 ---
+            { "carrot", "Carrot" },
+            { "chili", "Chili" },
+            { "corn", "Corn" },
+            { "rice", "Rice" },
+            { "jute", "Jute" },
+            { "level", "Lv" },
+            { "level_up", "Level up! Lv" },
+            { "new_unlock", "New crop unlocked!" },
+            { "need_level", "Unlocks at level" },
+            { "market", "Market" },
+            { "barn", "Barn" },
+            { "store_empty", "The barn is empty. Harvest a crop first!" },
+            { "sell_all", "Sell all" },
+            { "sold_for", "Sold for" },
+            { "nothing_to_sell", "Nothing to sell yet" },
+            { "total_value", "Barn value" },
+            { "buy_land", "Buy land" },
+            { "locked_land", "Locked land — tap to buy" },
+            { "land_bought", "Land bought!" },
+            { "close", "Close" },
+            { "market_price", "Today's price" },
+            { "plots", "plots" }
         };
 
         private static readonly Dictionary<string, string> Bn = new Dictionary<string, string>
@@ -62,7 +87,7 @@ namespace FarmSim
             { "pumpkin", "কুমড়া" },
             { "cost", "দাম" },
             { "sell", "বিক্রি" },
-            { "hint_empty", "মাটিতে ট্যাপ করে বীজ লাগান। বাড়ন্ত ফসলে ট্যাপ করে পানি দিন। সোনালি ফসলে ট্যাপ করে ফসল তুলুন!" },
+            { "hint_empty", "বীজ লাগান, পানি দিন, ফসল তুলুন — তারপর বাজারে বিক্রি করুন!" },
             { "hint_growing", "পানি দিতে বাড়ন্ত ফসলে ট্যাপ করুন — দ্রুত বাড়বে!" },
             { "hint_ready", "ফসল তুলতে সোনালি ফসলে ট্যাপ করুন!" },
             { "not_enough_coins", "যথেষ্ট কয়েন নেই!" },
@@ -77,11 +102,36 @@ namespace FarmSim
                 "১. নিচ থেকে একটি বীজ বেছে নিন।\n" +
                 "২. মাটির জমিতে ট্যাপ করে বীজ লাগান।\n" +
                 "৩. বাড়ন্ত ফসলে ট্যাপ করুন — পানি পেলে ১.৮ গুণ দ্রুত বাড়ে।\n" +
-                "৪. সোনালি হয়ে গেলে ট্যাপ করুন — কয়েন পাবেন।\n\n" +
+                "৪. সোনালি হলে ট্যাপ করুন — ফসল গুদামে জমা হবে।\n" +
+                "৫. \"বাজার\" খুলে বিক্রি করুন — কয়েন পাবেন!\n\n" +
                 "ড্র্যাগ করে ক্যামেরা সরান, পিঞ্চ করে জুম করুন, ডাবল ট্যাপে রিসেট।" },
             { "tut_ok", "শুরু করি!" },
             { "ready", "তোলার জন্য তৈরি" },
-            { "no_coins_short", "আরও কয়েন দরকার" }
+            { "no_coins_short", "আরও কয়েন দরকার" },
+
+            // --- v1.1 ---
+            { "carrot", "গাজর" },
+            { "chili", "মরিচ" },
+            { "corn", "ভুট্টা" },
+            { "rice", "ধান" },
+            { "jute", "পাট" },
+            { "level", "লেভেল" },
+            { "level_up", "লেভেল আপ! লেভেল" },
+            { "new_unlock", "নতুন ফসল আনলক হয়েছে!" },
+            { "need_level", "আনলক হবে লেভেলে" },
+            { "market", "বাজার" },
+            { "barn", "গুদাম" },
+            { "store_empty", "গুদাম খালি। আগে ফসল তুলুন!" },
+            { "sell_all", "সব বিক্রি" },
+            { "sold_for", "বিক্রি হয়েছে" },
+            { "nothing_to_sell", "বিক্রি করার কিছু নেই" },
+            { "total_value", "গুদামের মূল্য" },
+            { "buy_land", "জমি কিনুন" },
+            { "locked_land", "লক করা জমি — কিনতে ট্যাপ করুন" },
+            { "land_bought", "নতুন জমি কেনা হয়েছে!" },
+            { "close", "বন্ধ" },
+            { "market_price", "আজকের দাম" },
+            { "playes", "জমি" }
         };
 
         public static string T(string key)

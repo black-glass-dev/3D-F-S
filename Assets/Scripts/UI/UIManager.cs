@@ -6,27 +6,36 @@ using UnityEngine.UI;
 namespace FarmSim
 {
     /// <summary>
-    /// The whole HUD, built in code: coin pill, day + time-of-day bar,
-    /// seed cards, language / sound / next-day buttons, toast and the
-    /// first-run tutorial. No prefabs, no scene wiring.
+    /// The whole HUD, built in code: coin pill, level + XP bar, day and
+    /// time-of-day bar, paged seed cards, market / sound / language /
+    /// next-day buttons, toast and the first-run tutorial.
     /// </summary>
     public class UIManager : MonoBehaviour
     {
         public static UIManager Instance { get; private set; }
 
+        private const int CardsPerPage = 4;
+        private const float TopBarHeight = 132f;
+        private const float BottomBarHeight = 214f;
+
         private Canvas _canvas;
         private Text _coinsText;
         private RectTransform _coinPill;
+        private Text _levelText;
+        private Image _xpFill;
         private Text _dayText;
         private Image _dayProgressFill;
         private Text _hintText;
         private Text _seedTitleText;
+        private Text _pageText;
         private Text _toastText;
         private Image _toastBg;
         private CanvasGroup _toastGroup;
         private Button _langButton;
         private Button _soundButton;
         private Button _nextDayButton;
+        private Button _marketButton;
+        private Text _marketLabel;
         private CanvasGroup _tutorialGroup;
 
         private readonly List<Button> _seedCards = new List<Button>();
@@ -35,12 +44,12 @@ namespace FarmSim
         private readonly List<Image> _seedIcons = new List<Image>();
         private readonly List<Image> _seedBackgrounds = new List<Image>();
 
+        private MarketPanel _market;
+        private int _seedPage;
+
         private Coroutine _toastRoutine;
         private float _coinPulse = 1f;
         private int _lastCoins = -1;
-
-        private const float TopBarHeight = 132f;
-        private const float BottomBarHeight = 214f;
 
         private void Awake()
         {
@@ -72,10 +81,16 @@ namespace FarmSim
 
         private void Update()
         {
-            if (GameManager.Instance != null && _dayProgressFill != null)
+            var manager = GameManager.Instance;
+            if (manager != null && _dayProgressFill != null)
             {
-                float t = GameManager.Instance.DayProgress01;
+                float t = manager.DayProgress01;
                 _dayProgressFill.fillAmount = Mathf.Lerp(_dayProgressFill.fillAmount, t, Time.deltaTime * 6f);
+            }
+
+            if (manager != null && _xpFill != null)
+            {
+                _xpFill.fillAmount = Mathf.Lerp(_xpFill.fillAmount, manager.LevelProgress01, Time.deltaTime * 8f);
             }
 
             _coinPulse = Mathf.Lerp(_coinPulse, 1f, Time.deltaTime * 10f);
@@ -100,6 +115,10 @@ namespace FarmSim
             BuildTopBar(canvasGo.transform);
             BuildBottomBar(canvasGo.transform);
             BuildToast(canvasGo.transform);
+
+            _market = new MarketPanel();
+            _market.Build(canvasGo.transform);
+
             BuildTutorial(canvasGo.transform);
         }
 
@@ -109,116 +128,171 @@ namespace FarmSim
             UiFactory.Place(bar.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(0f, -TopBarHeight), Vector2.zero);
 
-            // coin pill
-            var coinBg = UiFactory.CreateImage(bar.transform, "CoinPill", UiFactory.RoundedSprite, UiFactory.PanelLight, true);
+            // ---- coin pill ----
+            var coinBg = UiFactory.CreateImage(bar.transform, "CoinPill", UiFactory.RoundedSprite,
+                UiFactory.PanelLight, true);
             UiFactory.Place(coinBg.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                 new Vector2(24f, -44f), new Vector2(324f, 44f));
             _coinPill = coinBg.rectTransform;
 
-            var coinIcon = UiFactory.CreateImage(coinBg.transform, "CoinIcon", UiFactory.CircleSprite, UiFactory.Gold, false);
+            var coinIcon = UiFactory.CreateImage(coinBg.transform, "CoinIcon", UiFactory.CircleSprite,
+                UiFactory.Gold, false);
             UiFactory.Place(coinIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                 new Vector2(12f, -30f), new Vector2(72f, 30f));
-            var innerIcon = UiFactory.CreateImage(coinIcon.transform, "Inner", UiFactory.CircleSprite, UiFactory.GoldDark, false);
+            var innerIcon = UiFactory.CreateImage(coinIcon.transform, "Inner", UiFactory.CircleSprite,
+                UiFactory.GoldDark, false);
             UiFactory.Place(innerIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(-13f, -13f), new Vector2(13f, 13f));
 
-            _coinsText = UiFactory.CreateText(coinBg.transform, "Coins", GameFonts.SemiBold, 46,
+            _coinsText = UiFactory.CreateText(coinBg.transform, "Coins", GameFonts.SemiBold, 44,
                 TextAnchor.MiddleLeft, UiFactory.TextDark);
             UiFactory.Place(_coinsText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f),
                 new Vector2(84f, 0f), new Vector2(-18f, 0f));
 
-            // day + time-of-day bar (centre)
-            _dayText = UiFactory.CreateText(bar.transform, "Day", GameFonts.SemiBold, 42,
+            // ---- level + XP ----
+            var levelBg = UiFactory.CreateImage(bar.transform, "LevelPill", UiFactory.RoundedSprite,
+                new Color(0.16f, 0.19f, 0.16f, 0.96f), true);
+            UiFactory.Place(levelBg.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(344f, -44f), new Vector2(636f, 44f));
+
+            _levelText = UiFactory.CreateText(levelBg.transform, "Level", GameFonts.SemiBold, 28,
+                TextAnchor.MiddleLeft, new Color(0.95f, 0.91f, 0.80f));
+            UiFactory.Place(_levelText.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(16f, 6f), new Vector2(-16f, 36f));
+            _levelText.text = "Lv 1";
+
+            _levelText.horizontalOverflow = HorizontalWrapMode.Overflow;
+
+            var xpBg = UiFactory.CreateImage(levelBg.transform, "XpBg", UiFactory.RoundedSprite,
+                new Color(1f, 1f, 1f, 0.16f), true);
+            UiFactory.Place(xpBg.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(16f, -30f), new Vector2(-16f, -10f));
+
+            var xpFill = UiFactory.CreateImage(xpBg.transform, "XpFill", UiFactory.RoundedSprite,
+                UiFactory.Gold, true);
+            UiFactory.Place(xpFill.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            xpFill.type = Image.Type.Filled;
+            xpFill.fillMethod = Image.FillMethod.Horizontal;
+            xpFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            xpFill.fillAmount = 0f;
+            _xpFill = xpFill;
+
+            // ---- day + time bar (centre) ----
+            _dayText = UiFactory.CreateText(bar.transform, "Day", GameFonts.SemiBold, 38,
                 TextAnchor.MiddleCenter, new Color(0.92f, 0.90f, 0.84f));
-            UiFactory.Place(_dayText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(-180f, -62f), new Vector2(180f, -12f));
+            UiFactory.Place(_dayText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-190f, 4f), new Vector2(190f, 52f));
 
             var barBg = UiFactory.CreateImage(bar.transform, "DayBarBg", UiFactory.RoundedSprite,
-                new Color(1f, 1f, 1f, 0.22f), true);
-            UiFactory.Place(barBg.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(-150f, -86f), new Vector2(150f, -70f));
+                new Color(1f, 1f, 1f, 0.18f), true);
+            UiFactory.Place(barBg.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-190f, -46f), new Vector2(190f, -12f));
 
-            var fill = UiFactory.CreateImage(barBg.transform, "DayBarFill", UiFactory.RoundedSprite, UiFactory.Gold, true);
-            UiFactory.Place(fill.rectTransform, Vector2.zero, Vector2.one, new Vector2(0f, 0f), new Vector2(0f, 0f));
+            var fill = UiFactory.CreateImage(barBg.transform, "DayBarFill", UiFactory.RoundedSprite,
+                UiFactory.Gold, true);
+            UiFactory.Place(fill.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             fill.type = Image.Type.Filled;
             fill.fillMethod = Image.FillMethod.Horizontal;
             fill.fillOrigin = (int)Image.OriginHorizontal.Left;
             fill.fillAmount = 0f;
             _dayProgressFill = fill;
 
-            // right side buttons
+            // ---- right side buttons ----
             _soundButton = UiFactory.CreateButton(bar.transform, "SoundButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-300f, -38f), new Vector2(-188f, 38f),
-                new Color(0.19f, 0.24f, 0.19f), "SFX", GameFonts.SemiBold, 30, OnSoundClicked);
+                new Vector2(-540f, -38f), new Vector2(-428f, 38f),
+                new Color(0.19f, 0.24f, 0.19f), "SFX", GameFonts.SemiBold, 28, OnSoundClicked);
 
             _langButton = UiFactory.CreateButton(bar.transform, "LangButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-180f, -38f), new Vector2(-68f, 38f),
-                new Color(0.19f, 0.24f, 0.19f), "বাংলা", GameFonts.SemiBold, 30, OnLanguageClicked);
+                new Vector2(-416f, -38f), new Vector2(-304f, 38f),
+                new Color(0.19f, 0.24f, 0.19f), "বাংলা", GameFonts.SemiBold, 28, OnLanguageClicked);
 
             _nextDayButton = UiFactory.CreateButton(bar.transform, "NextDayButton",
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-336f, -44f), new Vector2(-24f, 44f),
-                UiFactory.Gold, Localization.T("next_day"), GameFonts.SemiBold, 32, OnNextDayClicked);
+                new Vector2(-288f, -44f), new Vector2(-24f, 44f),
+                UiFactory.Gold, Localization.T("next_day"), GameFonts.SemiBold, 30, OnNextDayClicked);
         }
 
         private void BuildBottomBar(Transform parent)
         {
             var bar = UiFactory.CreateImage(parent, "BottomBar", null, new Color(0.09f, 0.11f, 0.10f, 0.90f), false);
             UiFactory.Place(bar.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
-                new Vector2(0f, 0f), new Vector2(0f, BottomBarHeight));
+                Vector2.zero, new Vector2(0f, BottomBarHeight));
 
-            _seedTitleText = UiFactory.CreateText(bar.transform, "SeedTitle", GameFonts.SemiBold, 34,
-                TextAnchor.MiddleLeft, new Color(0.92f, 0.90f, 0.84f));
+            _seedTitleText = UiFactory.CreateText(bar.transform, "SeedTitle", GameFonts.SemiBold, 32,
+                TextAnchor.MiddleLeft, new Color(0.90f, 0.88f, 0.82f));
             UiFactory.Place(_seedTitleText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(30f, -58f), new Vector2(330f, -12f));
+                new Vector2(30f, -54f), new Vector2(330f, -14f));
 
-            for (int i = 0; i < CropDatabase.Count; i++)
+            for (int i = 0; i < CardsPerPage; i++)
             {
-                int index = i;
-                var crop = CropDatabase.Get(i);
-                float cardWidth = 380f;
-                float left = 30f + i * (cardWidth + 18f);
+                int slot = i;
+                float left = 30f + i * 312f;
 
                 var card = UiFactory.CreateButton(bar.transform, "SeedCard" + i,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(left, -150f), new Vector2(left + cardWidth, -8f),
+                    new Vector2(left, -166f), new Vector2(left + 300f, -40f),
                     new Color(0.17f, 0.22f, 0.17f), null, GameFonts.Regular, 30,
-                    () => OnSeedClicked(index));
+                    () => OnSeedSlotClicked(slot));
                 _seedCards.Add(card);
                 _seedBackgrounds.Add(card.GetComponent<Image>());
 
-                var icon = UiFactory.CreateImage(card.transform, "Icon", UiFactory.RoundedSprite, crop.RipeColor, true);
+                var icon = UiFactory.CreateImage(card.transform, "Icon", UiFactory.RoundedSprite,
+                    Color.white, true);
                 UiFactory.Place(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                    new Vector2(12f, -46f), new Vector2(104f, 46f));
+                    new Vector2(12f, -26f), new Vector2(64f, 26f));
                 _seedIcons.Add(icon);
 
-                var name = UiFactory.CreateText(card.transform, "Name", GameFonts.SemiBold, 33,
+                var name = UiFactory.CreateText(card.transform, "Name", GameFonts.SemiBold, 30,
                     TextAnchor.LowerLeft, Color.white);
                 UiFactory.Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 1f),
-                    new Vector2(116f, -4f), new Vector2(-12f, -10f));
+                    new Vector2(74f, 0f), new Vector2(-10f, -8f));
                 _seedNames.Add(name);
 
-                var price = UiFactory.CreateText(card.transform, "Price", GameFonts.Regular, 26,
-                    TextAnchor.UpperLeft, new Color(0.78f, 0.84f, 0.74f));
+                var price = UiFactory.CreateText(card.transform, "Price", GameFonts.Regular, 24,
+                    TextAnchor.UpperLeft, new Color(0.80f, 0.84f, 0.76f));
                 UiFactory.Place(price.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.5f),
-                    new Vector2(116f, 10f), new Vector2(-12f, 4f));
+                    new Vector2(74f, 8f), new Vector2(-10f, 0f));
                 _seedPrices.Add(price);
             }
 
-            _hintText = UiFactory.CreateText(bar.transform, "Hint", GameFonts.Regular, 27,
+            // paging
+            UiFactory.CreateButton(bar.transform, "PrevPage",
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-648f, -166f), new Vector2(-588f, -106f),
+                new Color(0.19f, 0.24f, 0.19f), "<", GameFonts.Bold, 32, () => ChangePage(-1));
+
+            UiFactory.CreateButton(bar.transform, "NextPage",
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-580f, -166f), new Vector2(-520f, -106f),
+                new Color(0.19f, 0.24f, 0.19f), ">", GameFonts.Bold, 32, () => ChangePage(1));
+
+            _pageText = UiFactory.CreateText(bar.transform, "PageLabel", GameFonts.Regular, 24,
+                TextAnchor.MiddleCenter, new Color(0.78f, 0.80f, 0.74f));
+            UiFactory.Place(_pageText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-648f, -104f), new Vector2(-520f, -74f));
+
+            // market button
+            _marketButton = UiFactory.CreateButton(bar.transform, "MarketButton",
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-496f, -166f), new Vector2(-30f, -40f),
+                UiFactory.Green, Localization.T("market"), GameFonts.SemiBold, 38, OnMarketClicked);
+            _marketLabel = _marketButton.GetComponentInChildren<Text>();
+            if (_marketLabel != null) _marketLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+
+            _hintText = UiFactory.CreateText(bar.transform, "Hint", GameFonts.Regular, 24,
                 TextAnchor.MiddleLeft, new Color(0.76f, 0.80f, 0.72f));
             UiFactory.Place(_hintText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
-                new Vector2(30f, 6f), new Vector2(-30f, 40f));
+                new Vector2(30f, 6f), new Vector2(-500f, 38f));
+            _hintText.horizontalOverflow = HorizontalWrapMode.Overflow;
 
             // tiny build stamp so a new APK can be recognised at a glance
-            var version = UiFactory.CreateText(bar.transform, "Version", GameFonts.Regular, 22,
+            var version = UiFactory.CreateText(bar.transform, "Version", GameFonts.Regular, 20,
                 TextAnchor.LowerRight, new Color(0.78f, 0.80f, 0.74f, 0.55f));
-            version.text = "v1.0.4";
-            version.raycastTarget = false;
+            version.text = "v1.1.0";
             UiFactory.Place(version.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-150f, 6f), new Vector2(-24f, 36f));
+                new Vector2(-150f, 4f), new Vector2(-24f, 30f));
         }
 
         private void BuildToast(Transform parent)
@@ -232,7 +306,7 @@ namespace FarmSim
             _toastGroup.alpha = 0f;
             _toastGroup.blocksRaycasts = false;
 
-            _toastText = UiFactory.CreateText(bg.transform, "ToastText", GameFonts.SemiBold, 38,
+            _toastText = UiFactory.CreateText(bg.transform, "ToastText", GameFonts.SemiBold, 36,
                 TextAnchor.MiddleCenter, Color.white);
             UiFactory.Place(_toastText.rectTransform, Vector2.zero, Vector2.one,
                 new Vector2(16f, 4f), new Vector2(-16f, -4f));
@@ -250,15 +324,15 @@ namespace FarmSim
             var card = UiFactory.CreateImage(overlay.transform, "Card", UiFactory.RoundedSprite, UiFactory.PanelLight, true);
             card.raycastTarget = true;
             UiFactory.Place(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-440f, -300f), new Vector2(440f, 300f));
+                new Vector2(-460f, -310f), new Vector2(460f, 310f));
 
-            var title = UiFactory.CreateText(card.transform, "Title", GameFonts.Bold, 52,
+            var title = UiFactory.CreateText(card.transform, "Title", GameFonts.Bold, 50,
                 TextAnchor.MiddleCenter, UiFactory.GreenDark);
             UiFactory.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(20f, -90f), new Vector2(-20f, -24f));
             title.text = Localization.T("tut_title");
 
-            var body = UiFactory.CreateText(card.transform, "Body", GameFonts.Regular, 34,
+            var body = UiFactory.CreateText(card.transform, "Body", GameFonts.Regular, 32,
                 TextAnchor.UpperLeft, UiFactory.TextDark);
             UiFactory.Place(body.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f),
                 new Vector2(44f, 130f), new Vector2(-44f, -110f));
@@ -267,17 +341,36 @@ namespace FarmSim
             UiFactory.CreateButton(card.transform, "StartButton",
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(-170f, 34f), new Vector2(170f, 118f),
-                UiFactory.Green, Localization.T("tut_ok"), GameFonts.SemiBold, 38, HideTutorial);
+                UiFactory.Green, Localization.T("tut_ok"), GameFonts.SemiBold, 36, HideTutorial);
         }
 
         // ---------- behaviour ----------
 
-        private void OnSeedClicked(int index)
+        private void OnSeedSlotClicked(int slot)
         {
-            if (GameManager.Instance == null) return;
-            GameManager.Instance.SelectCrop(index);
+            var manager = GameManager.Instance;
+            if (manager == null) return;
+
+            int index = _seedPage * CardsPerPage + slot;
+            if (index >= CropDatabase.Count) return;
+
+            manager.SelectCrop(index);
             if (SfxManager.Instance != null) SfxManager.Instance.PlayTap();
             RefreshAll();
+        }
+
+        private void ChangePage(int direction)
+        {
+            int pages = Mathf.CeilToInt(CropDatabase.Count / (float)CardsPerPage);
+            _seedPage = (_seedPage + direction + pages) % pages;
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayTap();
+            RefreshAll();
+        }
+
+        private void OnMarketClicked()
+        {
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayTap();
+            if (_market != null) _market.Toggle();
         }
 
         private void OnNextDayClicked()
@@ -292,6 +385,7 @@ namespace FarmSim
             Localization.Toggle();
             if (SfxManager.Instance != null) SfxManager.Instance.PlayTap();
             RefreshAll();
+            if (_market != null) _market.Refresh();
         }
 
         private void OnSoundClicked()
@@ -346,6 +440,15 @@ namespace FarmSim
             if (_seedTitleText != null) _seedTitleText.text = Localization.T("select_seed");
             if (_hintText != null) _hintText.text = Localization.T("hint_empty");
 
+            if (_levelText != null)
+            {
+                _levelText.text = Localization.T("level") + " " + manager.Level +
+                                  "   " + manager.Xp + "/" + manager.XpToNextLevel;
+            }
+
+            int pages = Mathf.CeilToInt(CropDatabase.Count / (float)CardsPerPage);
+            if (_pageText != null) _pageText.text = (_seedPage + 1) + "/" + pages;
+
             if (_langButton != null)
             {
                 var label = _langButton.GetComponentInChildren<Text>();
@@ -368,40 +471,70 @@ namespace FarmSim
                     label.color = on ? Color.white : new Color(0.75f, 0.75f, 0.75f);
                 }
                 _soundButton.GetComponent<Image>().color = on
-                    ? new Color(0.22f, 0.34f, 0.20f)
+                    ? new Color(0.19f, 0.24f, 0.19f)
                     : new Color(0.30f, 0.22f, 0.22f);
             }
 
-            for (int i = 0; i < _seedCards.Count; i++)
+            if (_marketButton != null && _marketLabel != null)
             {
-                var crop = CropDatabase.Get(i);
-                bool selected = i == manager.SelectedCropIndex;
+                int stored = manager.StoredTotal;
+                _marketLabel.text = Localization.T("market") + (stored > 0 ? "  (" + stored + ")" : "");
+                _marketButton.GetComponent<Image>().color = stored > 0
+                    ? UiFactory.Green
+                    : new Color(0.20f, 0.24f, 0.20f);
+            }
 
-                if (_seedNames.Count > i && _seedNames[i] != null)
-                    _seedNames[i].text = crop.DisplayName;
+            for (int slot = 0; slot < _seedCards.Count; slot++)
+            {
+                int index = _seedPage * CardsPerPage + slot;
+                bool exists = index < CropDatabase.Count;
 
-                if (_seedPrices.Count > i && _seedPrices[i] != null)
+                if (_seedCards[slot] != null)
+                    _seedCards[slot].gameObject.SetActive(exists);
+                if (!exists) continue;
+
+                var crop = CropDatabase.Get(index);
+                bool unlocked = manager.IsCropUnlocked(index);
+                bool selected = index == manager.SelectedCropIndex;
+
+                if (_seedNames.Count > slot && _seedNames[slot] != null)
                 {
-                    _seedPrices[i].text = Localization.T("cost") + " " + crop.SeedCost +
-                                          "  ·  " + Localization.T("sell") + " " + crop.SellPrice;
+                    _seedNames[slot].text = crop.DisplayName;
+                    _seedNames[slot].color = unlocked ? Color.white : new Color(0.72f, 0.72f, 0.68f);
                 }
 
-                if (_seedBackgrounds.Count > i && _seedBackgrounds[i] != null)
+                if (_seedPrices.Count > slot && _seedPrices[slot] != null)
                 {
-                    _seedBackgrounds[i].color = selected
-                        ? new Color(0.27f, 0.40f, 0.22f)
-                        : new Color(0.16f, 0.24f, 0.14f);
+                    _seedPrices[slot].text = unlocked
+                        ? crop.SeedCost + " -> " + manager.MarketPrice[index]
+                        : Localization.T("need_level") + " " + crop.UnlockLevel;
+                    _seedPrices[slot].color = unlocked
+                        ? new Color(0.80f, 0.84f, 0.76f)
+                        : new Color(0.90f, 0.76f, 0.44f);
                 }
 
-                if (_seedIcons.Count > i && _seedIcons[i] != null)
-                    _seedIcons[i].color = crop.RipeColor;
+                if (_seedBackgrounds.Count > slot && _seedBackgrounds[slot] != null)
+                {
+                    _seedBackgrounds[slot].color = selected && unlocked
+                        ? new Color(0.27f, 0.36f, 0.22f)
+                        : (unlocked ? new Color(0.16f, 0.21f, 0.16f) : new Color(0.14f, 0.15f, 0.14f));
+                }
 
-                var outline = _seedCards[i].GetComponent<Outline>();
-                if (outline == null) outline = _seedCards[i].gameObject.AddComponent<Outline>();
+                if (_seedIcons.Count > slot && _seedIcons[slot] != null)
+                {
+                    var color = crop.RipeColor;
+                    if (!unlocked) color = Color.Lerp(color, new Color(0.4f, 0.4f, 0.4f), 0.65f);
+                    _seedIcons[slot].color = color;
+                }
+
+                var outline = _seedCards[slot].GetComponent<Outline>();
+                if (outline == null) outline = _seedCards[slot].gameObject.AddComponent<Outline>();
                 outline.effectColor = UiFactory.Gold;
                 outline.effectDistance = new Vector2(3f, -3f);
-                outline.enabled = selected;
+                outline.enabled = selected && unlocked;
             }
+
+            if (_market != null && _market.IsVisible) _market.Refresh();
         }
 
         public void ShowToast(string message)
