@@ -54,7 +54,14 @@ namespace FarmSim
             {
                 manager.ApplySave(save);
                 grid.LoadSaveData(save.Plots);
+
+                // v1.3.0: crops keep growing while the game is closed.
+                int ripened = grid.ApplyOfflineGrowth(save.SavedAt);
                 UIManager.Instance.RefreshAll();
+
+                if (ripened > 0)
+                    UIManager.Instance.ShowToast(
+                        Localization.T("offline_grown") + " (" + ripened + ")", false, true);
             }
         }
 
@@ -76,7 +83,7 @@ namespace FarmSim
             }
 
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.46f, 0.49f, 0.54f);
+            RenderSettings.ambientLight = new Color(0.58f, 0.61f, 0.66f);
             RenderSettings.ambientIntensity = 1f;
             RenderSettings.reflectionIntensity = 0.4f;
             RenderSettings.fog = true;
@@ -110,7 +117,7 @@ namespace FarmSim
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Directional;
             fill.color = new Color(0.58f, 0.70f, 0.86f);
-            fill.intensity = 0.32f;
+            fill.intensity = 0.40f;
             fill.shadows = LightShadows.None;
             fill.renderMode = LightRenderMode.ForceVertex;
             fillGo.transform.rotation = Quaternion.Euler(22f, 214f, 0f);
@@ -139,7 +146,7 @@ namespace FarmSim
             // Colour grade: the last, cheapest step that makes the low-poly
             // world look intentional instead of flat.
             var grade = camGo.AddComponent<PostFx>();
-            grade.Exposure = 1.04f;
+            grade.Exposure = 1.02f;
             grade.ToneStrength = 0.88f;
             grade.Saturation = GraphicsSettings.GradeSaturation;
             grade.Contrast = GraphicsSettings.GradeContrast;

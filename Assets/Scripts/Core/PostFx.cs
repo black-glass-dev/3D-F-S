@@ -50,12 +50,14 @@ namespace FarmSim
                 return;
             }
 
-            _material.SetFloat(ExposureId, Exposure);
+            // The player's "light" setting scales the whole grade, so the
+            // brightness button feels like it does something everywhere.
+            _material.SetFloat(ExposureId, Exposure * LookSettings.Multiplier);
             _material.SetFloat(ToneId, ToneStrength);
             _material.SetFloat(ContrastId, Contrast);
             _material.SetFloat(SaturationId, Saturation);
             _material.SetFloat(LiftId, Lift);
-            _material.SetFloat(VignetteId, Vignette);
+            _material.SetFloat(VignetteId, Vignette * Mathf.Lerp(1.0f, 0.82f, (LookSettings.Multiplier - 0.86f) / 0.30f));
             _material.SetFloat(WarmthId, Warmth);
             _material.SetFloat(GrainId, Grain);
 
