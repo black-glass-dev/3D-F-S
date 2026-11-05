@@ -69,14 +69,16 @@ namespace FarmSim
                 : ShadowQuality.All;
             QualitySettings.shadowResolution = ShadowResolutionLevel >= 2
                 ? ShadowResolution.VeryHigh
-                : ShadowResolution.Medium;
+                : ShadowResolution.High;
             QualitySettings.shadowDistance = ShadowDistance;
-            QualitySettings.shadowCascades = Current == Tier.High ? 2 : 0;
+            QualitySettings.shadowCascades = Current == Tier.Low ? 1 : 2;
             QualitySettings.shadowProjection = ShadowProjection.StableFit;
 
             QualitySettings.antiAliasing = AntiAliasing;
             QualitySettings.pixelLightCount = PixelLightCount;
-            QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
+            // 2x aniso costs almost nothing and keeps the ground crisp when the
+            // camera looks along it at a grazing angle.
+            QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;
             QualitySettings.realtimeReflectionProbes = false;
             QualitySettings.softParticles = false;
             QualitySettings.vSyncCount = 0;
@@ -87,8 +89,8 @@ namespace FarmSim
         }
 
         /// <summary>Quality of the colour grade (lower tiers get a gentler look).</summary>
-        public static float GradeSaturation => Current == Tier.High ? 0.88f : 0.93f;
+        public static float GradeSaturation => Current == Tier.High ? 0.92f : 0.95f;
 
-        public static float GradeContrast => Current == Tier.High ? 1.10f : 1.06f;
+        public static float GradeContrast => Current == Tier.High ? 1.16f : 1.12f;
     }
 }

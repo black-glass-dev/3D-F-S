@@ -21,7 +21,7 @@ namespace FarmSim.Editor
     {
         private const string ScenePath = "Assets/Scenes/Main.unity";
         private const string ApkPath = "build/Android/FarmSim.apk";
-        private const string VERSION = "1.1.1";
+        private const string VERSION = "1.2.0";
 
         [MenuItem("FarmSim/Build Android APK (CI)")]
         public static void PerformBuild()
@@ -30,6 +30,7 @@ namespace FarmSim.Editor
             {
                 CreateMainScene();
                 ApplyPlayerSettings();
+                ApplyIcon();
 
                 Directory.CreateDirectory("build/Android");
 
@@ -74,6 +75,36 @@ namespace FarmSim.Editor
             };
         }
 
+        /// <summary>
+        /// Replaces the default Unity launcher icon with the game's own icon.
+        /// </summary>
+        private static void ApplyIcon()
+        {
+            const string iconPath = "Assets/Art/AppIcon.png";
+            var importer = AssetImporter.GetAtPath(iconPath) as TextureImporter;
+            if (importer == null)
+            {
+                Debug.LogWarning("App icon not found at " + iconPath + " — keeping the Unity default.");
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Default;
+            importer.mipmapEnabled = false;
+            importer.alphaIsTransparency = true;
+            importer.isReadable = true;
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.maxTextureSize = 1024;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.SaveAndReimport();
+
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(iconPath);
+            if (icon == null) return;
+
+            PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Android, new[] { icon });
+            PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Unknown, new[] { icon });
+            Debug.Log("App icon applied from " + iconPath);
+        }
+
         private static void ApplyPlayerSettings()
         {
             PlayerSettings.companyName = "FarmSimStudio";
@@ -81,6 +112,11 @@ namespace FarmSim.Editor
             PlayerSettings.bundleVersion = VERSION;
 
             PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.farmsim.threedgame");
+            // Linear lighting: the single biggest "cinematic instead of washed
+            // out" switch available on mobile (gamma space flattened every
+            // shadow into the mid tones).
+            PlayerSettings.colorSpace = ColorSpace.Linear;
+
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
             PlayerSettings.allowedAutorotateToLandscapeRight = true;

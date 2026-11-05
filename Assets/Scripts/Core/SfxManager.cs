@@ -25,6 +25,17 @@ namespace FarmSim
         public bool SoundOn { get; private set; }
         public bool HapticsOn { get; private set; }
 
+        // A 1-second full-strength buzz (Handheld.Vibrate) felt like a fault.
+        // These are short, low-amplitude native taps instead.
+        private const long LightTapMs = 12L;
+        private const long StrongTapMs = 24L;
+        private const int LightAmplitude = 45;   // 1..255
+        private const int StrongAmplitude = 90;
+
+        private AndroidJavaObject _vibrator;
+        private bool _vibratorChecked;
+        private int _sdkInt;
+
         public void Init()
         {
             Instance = this;
@@ -69,7 +80,7 @@ namespace FarmSim
         {
             Play(_harvest, 0.98f, 1.04f);
             Play(_coin, 0.98f, 1.02f);
-            Haptic();
+            Haptic(true);
         }
 
         public void PlayCoin()
@@ -93,13 +104,66 @@ namespace FarmSim
             Play(_day, 1f, 1f);
         }
 
-        public void Haptic()
+        public void Haptic(bool strong = false)
         {
             if (!HapticsOn) return;
 #if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                var vibrator = Vibrator;
+                if (vibrator != null)
+                {
+                    long ms = strong ? StrongTapMs : LightTapMs;
+                    if (_sdkInt >= 26)
+                    {
+                        using (var effectClass = new AndroidJavaClass("android.os.VibrationEffect"))
+                        using (var effect = effectClass.CallStatic<AndroidJavaObject>(
+                                   "createOneShot", ms, strong ? StrongAmplitude : LightAmplitude))
+                        {
+                            vibrator.Call("vibrate", effect);
+                        }
+                    }
+                    else
+                    {
+                        vibrator.Call("vibrate", ms);
+                    }
+                    return;
+                }
+            }
+            catch (System.Exception)
+            {
+                // no vibrator / permission denied: fall through to Unity's API
+            }
             Handheld.Vibrate();
 #endif
         }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        private AndroidJavaObject Vibrator
+        {
+            get
+            {
+                if (_vibratorChecked) return _vibrator;
+                _vibratorChecked = true;
+                try
+                {
+                    using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
+                        _sdkInt = version.GetStatic<int>("SDK_INT");
+
+                    using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                    using (var activity = player.GetStatic<AndroidJavaObject>("currentActivity"))
+                    {
+                        _vibrator = activity.Call<AndroidJavaObject>("getSystemService", "vibrator");
+                    }
+                }
+                catch (System.Exception)
+                {
+                    _vibrator = null;
+                }
+                return _vibrator;
+            }
+        }
+#endif
 
         public void ToggleSound()
         {

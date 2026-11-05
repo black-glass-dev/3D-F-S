@@ -76,14 +76,16 @@ namespace FarmSim
             }
 
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.42f, 0.46f, 0.52f);
+            RenderSettings.ambientLight = new Color(0.38f, 0.42f, 0.48f);
             RenderSettings.ambientIntensity = 1f;
             RenderSettings.reflectionIntensity = 0.4f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = 32f;
-            RenderSettings.fogEndDistance = 115f;
-            RenderSettings.fogColor = new Color(0.70f, 0.75f, 0.78f);
+            // The camera orbits ~31 m from the farm, so the old 32 m fog start
+            // put haze over the whole scene and flattened every shadow.
+            RenderSettings.fogStartDistance = 78f;
+            RenderSettings.fogEndDistance = 260f;
+            RenderSettings.fogColor = new Color(0.72f, 0.77f, 0.80f);
         }
 
         private Light CreateSun()
@@ -92,11 +94,11 @@ namespace FarmSim
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
             sun.color = new Color(1f, 0.95f, 0.86f);
-            sun.intensity = 0.95f;
+            sun.intensity = 1.15f;
             sun.shadows = GraphicsSettings.SoftShadows ? LightShadows.Soft : LightShadows.Hard;
-            sun.shadowStrength = 0.72f;
-            sun.shadowBias = 0.05f;
-            sun.shadowNormalBias = 0.35f;
+            sun.shadowStrength = 0.88f;
+            sun.shadowBias = 0.04f;
+            sun.shadowNormalBias = 0.22f;
             sun.renderMode = LightRenderMode.ForcePixel;
             // Lower sun = longer, softer shadows (cinematic late-morning light)
             sunGo.transform.rotation = Quaternion.Euler(38f, 34f, 0f);
@@ -108,7 +110,7 @@ namespace FarmSim
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Directional;
             fill.color = new Color(0.58f, 0.70f, 0.86f);
-            fill.intensity = 0.30f;
+            fill.intensity = 0.26f;
             fill.shadows = LightShadows.None;
             fill.renderMode = LightRenderMode.ForceVertex;
             fillGo.transform.rotation = Quaternion.Euler(22f, 214f, 0f);
@@ -137,14 +139,14 @@ namespace FarmSim
             // Colour grade: the last, cheapest step that makes the low-poly
             // world look intentional instead of flat.
             var grade = camGo.AddComponent<PostFx>();
-            grade.Exposure = 1.02f;
-            grade.ToneStrength = 0.88f;
+            grade.Exposure = 1.06f;
+            grade.ToneStrength = 0.9f;
             grade.Saturation = GraphicsSettings.GradeSaturation;
             grade.Contrast = GraphicsSettings.GradeContrast;
-            grade.Lift = 0.035f;
-            grade.Warmth = 0.7f;
-            grade.Vignette = 0.62f;
-            grade.Grain = GraphicsSettings.Current == GraphicsSettings.Tier.Low ? 0f : 0.012f;
+            grade.Lift = 0.018f;
+            grade.Warmth = 0.72f;
+            grade.Vignette = 0.5f;
+            grade.Grain = GraphicsSettings.Current == GraphicsSettings.Tier.Low ? 0f : 0.008f;
 
             return cam;
         }

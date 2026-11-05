@@ -108,6 +108,15 @@ namespace FarmSim
             }
         }
 
+        /// <summary>Sprinkler upgrade: re-water every growing plot.</summary>
+        public void WaterAll()
+        {
+            for (int i = 0; i < _plots.Count; i++)
+            {
+                if (_plots[i] != null) _plots[i].AutoWater();
+            }
+        }
+
         public void OnNewDay()
         {
             for (int i = 0; i < _plots.Count; i++)

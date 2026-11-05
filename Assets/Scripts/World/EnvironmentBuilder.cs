@@ -57,6 +57,7 @@ namespace FarmSim
             BuildHouse(new Vector3(-9.6f, 0f, 6.6f));
             BuildBarn(new Vector3(11.8f, 0f, 7.4f));
             BuildWindmill(new Vector3(12.4f, 0f, -4.0f));
+            BuildWell(new Vector3(-5.9f, 0f, -5.7f));
             BuildPond(new Vector3(-11.6f, 0f, -4.8f));
             BuildTrees();
             BuildBushes();
@@ -376,6 +377,42 @@ namespace FarmSim
                 bale.GetComponent<Renderer>().sharedMaterial = _straw;
                 Object.Destroy(bale.GetComponent<Collider>());
             }
+        }
+
+
+        /// <summary>
+        /// The farm well — it is also the v1.2 "repair the well" upgrade, so it
+        /// has to read clearly from the top-down camera.
+        /// </summary>
+        private void BuildWell(Vector3 position)
+        {
+            var well = new GameObject("Well");
+            well.transform.SetParent(_staticRoot, false);
+            well.transform.localPosition = new Vector3(position.x, TerrainShape.Height(position.x, position.z), position.z);
+            well.transform.localRotation = Quaternion.Euler(0f, 24f, 0f);
+
+            AddContactShadow(well.transform, new Vector3(0f, 0.02f, 0f), 2.6f);
+
+            if (ModelLibrary.Spawn("well", well.transform, Vector3.zero, 2.1f) != null)
+                return;
+
+            // stone ring
+            AddCylinder(well.transform, new Vector3(0f, 0.34f, 0f), new Vector3(1.30f, 0.68f, 1.30f), _stone);
+            AddCylinder(well.transform, new Vector3(0f, 0.70f, 0f), new Vector3(1.34f, 0.10f, 1.34f), _rock);
+            AddCylinder(well.transform, new Vector3(0f, 0.72f, 0f), new Vector3(0.96f, 0.04f, 0.96f), _water);
+
+            // posts + roof
+            AddBox(well.transform, new Vector3(-0.62f, 1.18f, 0f), new Vector3(0.12f, 1.05f, 0.12f), _woodDark);
+            AddBox(well.transform, new Vector3(0.62f, 1.18f, 0f), new Vector3(0.12f, 1.05f, 0.12f), _woodDark);
+            AddBox(well.transform, new Vector3(0f, 1.72f, 0f), new Vector3(1.68f, 0.10f, 1.05f), _roofBrown);
+
+            AddMesh(well.transform, "WellRoof", MeshFactory.Roof, _roofRed,
+                new Vector3(0f, 1.86f, 0f), new Vector3(1.9f, 0.9f, 1.15f), 0f);
+
+            // bucket + rope
+            AddCylinder(well.transform, new Vector3(0f, 1.62f, 0f), new Vector3(0.05f, 0.34f, 0.05f), _woodDark);
+            AddBox(well.transform, new Vector3(0f, 1.24f, 0f), new Vector3(0.30f, 0.28f, 0.30f), _wood);
+            AddCylinder(well.transform, new Vector3(0f, 0.98f, 0f), new Vector3(0.04f, 0.30f, 0.04f), _woodDark);
         }
 
         private void BuildWindmill(Vector3 position)
