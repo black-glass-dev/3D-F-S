@@ -21,7 +21,7 @@ namespace FarmSim.Editor
     {
         private const string ScenePath = "Assets/Scenes/Main.unity";
         private const string ApkPath = "build/Android/FarmSim.apk";
-        private const string VERSION = "1.4.0";
+        private const string VERSION = "1.5.0";
 
         [MenuItem("FarmSim/Build Android APK (CI)")]
         public static void PerformBuild()

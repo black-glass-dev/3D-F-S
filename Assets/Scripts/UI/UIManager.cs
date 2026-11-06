@@ -82,23 +82,41 @@ namespace FarmSim
                 GameManager.Instance.OnStatsChanged -= RefreshAll;
         }
 
+        private float _uiTick;
+
         private void Update()
         {
+            // v1.5.0: touching a uGUI graphic dirties the whole canvas, and the
+            // canvas was being rebuilt every single frame just to slide two bars
+            // a fraction of a pixel. At 10 Hz nobody can see the difference and
+            // the rebuild cost drops six-fold.
+            _uiTick += Time.deltaTime;
+            if (_uiTick < 0.1f) return;
+            float dt = _uiTick;
+            _uiTick = 0f;
+
             var manager = GameManager.Instance;
             if (manager != null && _dayProgressFill != null)
             {
                 float t = manager.DayProgress01;
-                _dayProgressFill.fillAmount = Mathf.Lerp(_dayProgressFill.fillAmount, t, Time.deltaTime * 6f);
+                float next = Mathf.Lerp(_dayProgressFill.fillAmount, t, dt * 6f);
+                if (Mathf.Abs(next - _dayProgressFill.fillAmount) > 0.0008f)
+                    _dayProgressFill.fillAmount = next;
             }
 
             if (manager != null && _xpFill != null)
             {
-                _xpFill.fillAmount = Mathf.Lerp(_xpFill.fillAmount, manager.LevelProgress01, Time.deltaTime * 8f);
+                float next = Mathf.Lerp(_xpFill.fillAmount, manager.LevelProgress01, dt * 8f);
+                if (Mathf.Abs(next - _xpFill.fillAmount) > 0.0008f)
+                    _xpFill.fillAmount = next;
             }
 
-            _coinPulse = Mathf.Lerp(_coinPulse, 1f, Time.deltaTime * 10f);
-            if (_coinsText != null)
-                _coinsText.transform.localScale = Vector3.one * _coinPulse;
+            if (_coinPulse > 1.001f)
+            {
+                _coinPulse = Mathf.Lerp(_coinPulse, 1f, dt * 10f);
+                if (_coinsText != null)
+                    _coinsText.transform.localScale = Vector3.one * _coinPulse;
+            }
         }
 
         // ---------- construction ----------
@@ -331,7 +349,7 @@ namespace FarmSim
             // tiny build stamp so a new APK can be recognised at a glance
             var version = UiFactory.CreateText(bar.transform, "Version", GameFonts.Regular, 20,
                 TextAnchor.LowerRight, new Color(0.78f, 0.80f, 0.74f, 0.55f));
-            version.text = "v1.4.0";
+            version.text = "v1.5.0";
             UiFactory.Place(version.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
                 new Vector2(-150f, 4f), new Vector2(-24f, 30f));
         }

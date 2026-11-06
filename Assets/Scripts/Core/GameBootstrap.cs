@@ -205,24 +205,42 @@ namespace FarmSim
                 }
             }
 
-            var filters = worldRoot.GetComponentsInChildren<MeshFilter>(true);
-            for (int i = 0; i < filters.Length; i++)
-            {
-                var mesh = filters[i].sharedMesh;
-                if (mesh == null || !mesh.isReadable) return;
-            }
-
+            // ---- fold what is left into one mesh per material ----
+            int merged = 0;
             try
             {
-                StaticBatchingUtility.Combine(worldRoot.gameObject);
+                merged = StaticMeshCombiner.Combine(worldRoot);
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning("Static batching skipped: " + e.Message);
+                Debug.LogWarning("Mesh combine skipped: " + e.Message);
+            }
+
+            if (merged == 0)
+            {
+                var filters = worldRoot.GetComponentsInChildren<MeshFilter>(true);
+                bool readable = true;
+                for (int i = 0; i < filters.Length; i++)
+                {
+                    var mesh = filters[i].sharedMesh;
+                    if (mesh == null || !mesh.isReadable) { readable = false; break; }
+                }
+
+                if (readable)
+                {
+                    try
+                    {
+                        StaticBatchingUtility.Combine(worldRoot.gameObject);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogWarning("Static batching skipped: " + e.Message);
+                    }
+                }
             }
 
             Debug.Log("[FarmSim] static world: " + renderers.Length + " renderers, " +
-                      shadowless + " moved out of the shadow pass");
+                      shadowless + " out of the shadow pass, " + merged + " merged into batches");
         }
     }
 }
