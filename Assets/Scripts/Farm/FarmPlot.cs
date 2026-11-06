@@ -66,46 +66,17 @@ namespace FarmSim
 
         private void BuildSoilVisual()
         {
-            // --- soil slab ---
-            var soil = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            soil.name = "Soil";
+            // One renderer per plot: the slab, the furrows and a couple of pebble
+            // bumps live in a single shared mesh (MeshFactory.PlotSoil).
+            var soil = new GameObject("Soil");
             soil.transform.SetParent(transform, false);
-            soil.transform.localPosition = new Vector3(0f, 0.06f, 0f);
-            soil.transform.localScale = new Vector3(1f, 0.12f, 1f);
-            _soilRenderer = soil.GetComponent<Renderer>();
+            soil.AddComponent<MeshFilter>().sharedMesh = MeshFactory.PlotSoil;
+
+            _soilRenderer = soil.AddComponent<MeshRenderer>();
             _soilRenderer.sharedMaterial = _soilDryMat;
-            Destroy(soil.GetComponent<Collider>());
-
-            // --- tilled furrows ---
-            _furrowRenderers = new Renderer[3];
-            for (int i = 0; i < 3; i++)
-            {
-                var furrow = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                furrow.name = "Furrow";
-                furrow.transform.SetParent(transform, false);
-                furrow.transform.localPosition = new Vector3(-0.28f + i * 0.28f, 0.13f, 0f);
-                furrow.transform.localScale = new Vector3(0.10f, 0.035f, 0.86f);
-                var renderer = furrow.GetComponent<Renderer>();
-                renderer.sharedMaterial = _soilDryMat;
-                _furrowRenderers[i] = renderer;
-                Destroy(furrow.GetComponent<Collider>());
-            }
-
-            // --- a couple of pebbles so empty plots still read as "soil" ---
-            for (int i = 0; i < 2; i++)
-            {
-                var pebble = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                pebble.name = "Pebble";
-                pebble.transform.SetParent(transform, false);
-                pebble.transform.localPosition = new Vector3(
-                    Random.Range(-0.38f, 0.38f), 0.135f, Random.Range(-0.38f, 0.38f));
-                float size = Random.Range(0.05f, 0.09f);
-                pebble.transform.localScale = new Vector3(size, size * 0.6f, size);
-                pebble.transform.localRotation = Quaternion.Euler(Random.Range(0f, 30f), Random.Range(0f, 360f), 0f);
-                pebble.GetComponent<Renderer>().sharedMaterial =
-                    MaterialCache.Get(new Color(0.46f, 0.44f, 0.39f), SurfacePattern.Stone);
-                Destroy(pebble.GetComponent<Collider>());
-            }
+            _soilRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _soilRenderer.receiveShadows = true;
+            _furrowRenderers = null;
         }
 
         private void BuildLockedVisual()
