@@ -16,6 +16,9 @@ namespace FarmSim
         private Text _titleText;
         private Text _emptyText;
         private Text _totalText;
+        private Button _barnButton;
+        private Text _barnLabel;
+
         private Button _wellButton;
         private Button _sprinklerButton;
         private Text _wellLabel;
@@ -79,10 +82,19 @@ namespace FarmSim
             _emptyText.text = Localization.T("store_empty");
 
             // footer: barn value + sell all
-            _totalText = UiFactory.CreateText(card.transform, "Total", GameFonts.SemiBold, 36,
+            _totalText = UiFactory.CreateText(card.transform, "Total", GameFonts.SemiBold, 32,
                 TextAnchor.MiddleLeft, new Color(0.95f, 0.88f, 0.62f));
             UiFactory.Place(_totalText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
-                new Vector2(40f, 30f), new Vector2(-420f, 110f));
+                new Vector2(40f, 30f), new Vector2(-700f, 110f));
+
+            // v1.8.0: barn space is bought here, next to the selling it enables.
+            _barnButton = UiFactory.CreateButton(card.transform, "UpgradeBarn",
+                new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(-688f, 28f), new Vector2(-400f, 112f),
+                new Color(0.30f, 0.42f, 0.52f, 0.95f), Localization.T("upgrade"), GameFonts.SemiBold, 26,
+                OnBuyBarn);
+            _barnLabel = _barnButton.GetComponentInChildren<Text>();
+            if (_barnLabel != null) _barnLabel.verticalOverflow = VerticalWrapMode.Overflow;
 
             _sellAllButton = UiFactory.CreateButton(card.transform, "SellAll",
                 new Vector2(1f, 0f), new Vector2(1f, 0f),
@@ -205,6 +217,22 @@ namespace FarmSim
                 UIManager.Instance.RefreshAll();
             }
             Refresh();
+        }
+
+        private void OnBuyBarn()
+        {
+            var manager = GameManager.Instance;
+            if (manager == null) return;
+
+            if (manager.BuyBarnUpgrade())
+            {
+                if (UIManager.Instance != null) UIManager.Instance.RefreshAll();
+                Refresh();
+            }
+            else if (manager.BarnMaxed && UIManager.Instance != null)
+            {
+                UIManager.Instance.ShowToast(Localization.T("barn_maxed"), true);
+            }
         }
 
         private void OnBuyWell()
@@ -356,7 +384,24 @@ namespace FarmSim
                 _sprinklerButton.interactable = !manager.HasSprinkler && manager.HasWell;
 
             if (_totalText != null)
-                _totalText.text = Localization.T("total_value") + ": " + manager.StoreValue;
+            {
+                _totalText.text = Localization.T("barn_capacity") + " " +
+                                  manager.StoredTotal + "/" + manager.BarnCapacity +
+                                  "   ·   " + Localization.T("total_value") + ": " + manager.StoreValue;
+                _totalText.color = manager.BarnFull
+                    ? new Color(0.95f, 0.62f, 0.52f)
+                    : new Color(0.95f, 0.88f, 0.62f);
+            }
+
+            if (_barnLabel != null)
+            {
+                _barnLabel.text = manager.BarnMaxed
+                    ? Localization.T("barn_maxed")
+                    : Localization.T("upgrade") + "  +" + GameManager.BarnStepCapacity +
+                      "\n" + manager.BarnUpgradeCost;
+            }
+            if (_barnButton != null)
+                _barnButton.interactable = !manager.BarnMaxed;
 
             if (_sellAllButton != null)
             {

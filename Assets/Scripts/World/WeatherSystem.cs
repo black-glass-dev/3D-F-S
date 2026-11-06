@@ -43,6 +43,12 @@ namespace FarmSim
             var go = new GameObject("Rain");
             go.transform.SetParent(transform, false);
             go.transform.localPosition = new Vector3(0f, 15f, 0f);
+            // v1.8.0: the default box shape fires particles along its local +Z,
+            // which made the rain streak sideways across the farm. Rotating the
+            // emitter 90 degrees about X points +Z straight down, while the
+            // box itself (46 x 46 x 0.2 in local space) stays a flat slab.
+            // (the 8 degrees of yaw tilt the drops slightly, for wind)
+            go.transform.localRotation = Quaternion.Euler(90f, 0f, 8f);
 
             var ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -64,7 +70,8 @@ namespace FarmSim
 
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(46f, 0.2f, 46f);
+            shape.scale = new Vector3(46f, 46f, 0.2f);
+
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             if (renderer != null)

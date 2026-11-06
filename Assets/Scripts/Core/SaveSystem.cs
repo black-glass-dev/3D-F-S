@@ -44,6 +44,7 @@ namespace FarmSim
         public int GoalProgress = 0;
         public bool GoalDone = false;
         public bool Rainy = false;
+        public int BarnUpgrades = 0;
 
         public List<PlotSaveData> Plots = new List<PlotSaveData>();
     }

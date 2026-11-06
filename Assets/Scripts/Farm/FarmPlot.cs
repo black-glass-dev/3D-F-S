@@ -335,8 +335,9 @@ namespace FarmSim
             var crop = CropDatabase.Get(CropIndex);
             var manager = GameManager.Instance;
 
-            if (manager != null)
-                manager.RegisterHarvest(CropIndex);
+            // The barn is finite: if it is full the crop stays in the field.
+            if (manager != null && !manager.RegisterHarvest(CropIndex))
+                return;
 
             int price = manager != null ? manager.MarketPrice[CropIndex] : crop.SellPrice;
 
