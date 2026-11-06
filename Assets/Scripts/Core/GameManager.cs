@@ -18,6 +18,9 @@ namespace FarmSim
         public const int MaxPlots = 36;
         public const int WellCost = 350;
         public const int SprinklerCost = 800;
+        public const int BarnBaseCapacity = 60;
+        public const int BarnStepCapacity = 40;
+        public const int BarnMaxUpgrades = 6;
 
         public int Coins { get; private set; }
         public int Day { get; private set; }
@@ -187,6 +190,29 @@ namespace FarmSim
             }
         }
 
+        /// <summary>v1.8.0: the barn is finite, and buying space is part of the loop.</summary>
+        public int BarnUpgrades { get; private set; }
+
+        public int BarnCapacity
+        {
+            get { return BarnBaseCapacity + BarnUpgrades * BarnStepCapacity; }
+        }
+
+        public int BarnUpgradeCost
+        {
+            get { return 200 + 180 * BarnUpgrades; }
+        }
+
+        public bool BarnMaxed
+        {
+            get { return BarnUpgrades >= BarnMaxUpgrades; }
+        }
+
+        public bool BarnFull
+        {
+            get { return StoredTotal >= BarnCapacity; }
+        }
+
         public int StoreValue
         {
             get
@@ -314,6 +340,8 @@ namespace FarmSim
                 RollNewDay();
             }
 
+            BarnUpgrades = Mathf.Clamp(data.BarnUpgrades, 0, BarnMaxUpgrades);
+
             SelectedCropIndex = Mathf.Clamp(data.SelectedCrop, 0, CropDatabase.Count - 1);
             if (!IsCropUnlocked(SelectedCropIndex)) SelectedCropIndex = 0;
 
@@ -342,6 +370,7 @@ namespace FarmSim
                 GoalProgress = DailyGoalProgress,
                 GoalDone = DailyGoalDone,
                 Rainy = IsRainyDay,
+                BarnUpgrades = BarnUpgrades,
                 Store = new System.Collections.Generic.List<int>(Store)
             };
             if (_grid != null)
@@ -515,9 +544,21 @@ namespace FarmSim
             Notify();
         }
 
-        /// <summary>A harvest goes into the barn and grants XP (coins come from selling).</summary>
-        public void RegisterHarvest(int cropIndex)
+        /// <summary>
+        /// A harvest goes into the barn and grants XP (coins come from selling).
+        /// Returns false when the barn is full — the crop then stays in the
+        /// field until the player sells something.
+        /// </summary>
+        public bool RegisterHarvest(int cropIndex)
         {
+            if (BarnFull)
+            {
+                if (SfxManager.Instance != null) SfxManager.Instance.PlayError();
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowToast(Localization.T("barn_full"), true);
+                return false;
+            }
+
             if (Store == null) Store = new int[CropDatabase.Count];
             int index = Mathf.Clamp(cropIndex, 0, Store.Length - 1);
 
@@ -533,6 +574,33 @@ namespace FarmSim
             }
 
             Notify();
+            return true;
+        }
+
+        /// <summary>Buys another 40 slots of barn space.</summary>
+        public bool BuyBarnUpgrade()
+        {
+            if (BarnMaxed) return false;
+
+            int cost = BarnUpgradeCost;
+            if (Coins < cost)
+            {
+                if (SfxManager.Instance != null) SfxManager.Instance.PlayError();
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowToast(Localization.T("no_coins_short"), true);
+                return false;
+            }
+
+            Coins -= cost;
+            BarnUpgrades++;
+            Notify();
+            SaveNow();
+
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayCoin();
+            if (UIManager.Instance != null)
+                UIManager.Instance.ShowToast(
+                    Localization.T("barn_upgraded") + " " + BarnCapacity, false, true);
+            return true;
         }
 
         public void SelectTool(int index)

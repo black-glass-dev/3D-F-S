@@ -896,12 +896,18 @@ namespace FarmSim
             {
                 var cloud = new GameObject("Cloud");
                 cloud.transform.SetParent(_movingRoot, false);
+                // v1.8.0: clouds used to sit at 15-21 m and could drift right in
+                // front of the camera, where a single puff filled a third of the
+                // screen (the big white blob next to the well). They now live in
+                // a high ring well above the view, 30-40 m up.
+                float angle = Random.Range(0f, Mathf.PI * 2f);
+                float radius = Random.Range(26f, 46f);
                 cloud.transform.localPosition = new Vector3(
-                    Random.Range(-28f, 28f), Random.Range(15f, 21f), Random.Range(-26f, 20f));
+                    Mathf.Cos(angle) * radius, Random.Range(30f, 40f), Mathf.Sin(angle) * radius);
 
                 var drifter = cloud.AddComponent<Drifter>();
                 drifter.Velocity = new Vector3(Random.Range(0.3f, 0.7f), 0f, 0f);
-                drifter.WrapDistance = 32f;
+                drifter.WrapDistance = 40f;
 
                 for (int p = 0; p < 4; p++)
                 {
@@ -910,7 +916,7 @@ namespace FarmSim
                     puff.transform.SetParent(cloud.transform, false);
                     puff.transform.localPosition = new Vector3(
                         (p - 1.5f) * Random.Range(1.3f, 1.9f), Random.Range(-0.25f, 0.3f), Random.Range(-0.7f, 0.7f));
-                    float size = Random.Range(1.9f, 3.2f);
+                    float size = Random.Range(2.2f, 3.6f);
                     puff.transform.localScale = new Vector3(size, size * 0.5f, size * 0.8f);
                     var renderer = puff.GetComponent<Renderer>();
                     renderer.sharedMaterial = _cloud;
