@@ -42,6 +42,10 @@ namespace FarmSim
             var grid = gridGo.AddComponent<FarmGrid>();
             grid.Build();
 
+            var weather = gameObject.AddComponent<WeatherSystem>();
+            weather.Init(MaterialCache.ParticleMaterial);
+            weather.ApplyQuality();
+
             manager.Init(grid, _sun);
 
             // UI is created after the manager so it can subscribe to refresh events.

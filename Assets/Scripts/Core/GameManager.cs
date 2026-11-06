@@ -46,6 +46,14 @@ namespace FarmSim
         /// <summary>Sprinklers re-water every growing plot at the start of each day.</summary>
         public bool HasSprinkler { get; private set; }
 
+        /// <summary>v1.6.0: today's little task — harvest N crops for a coin bonus.</summary>
+        public int DailyGoalTarget { get; private set; }
+        public int DailyGoalProgress { get; private set; }
+        public bool DailyGoalDone { get; private set; }
+
+        /// <summary>v1.6.0: a rainy day waters every growing plot for free.</summary>
+        public bool IsRainyDay { get; private set; }
+
         public float DayProgress01
         {
             get { return Mathf.Clamp01(TimeInDay / DayLengthSeconds); }
@@ -87,6 +95,7 @@ namespace FarmSim
             // Start mid-morning: the first frame should already look sunny.
             TimeInDay = DayLengthSeconds * 0.16f;
             RecomputeMarket();
+            RollNewDay();
         }
 
         public void Init(FarmGrid grid, Light sun)
@@ -95,6 +104,7 @@ namespace FarmSim
             _sun = sun;
             _skyMaterial = RenderSettings.skybox;
             ApplyTimeOfDay();
+            if (WeatherSystem.Instance != null) WeatherSystem.Instance.SetRain(IsRainyDay);
         }
 
         // ---------- progression ----------
@@ -291,10 +301,24 @@ namespace FarmSim
             HasWell = data.Well;
             HasSprinkler = data.Sprinkler;
 
+            // --- v1.6.0 daily goal & weather (old saves land on 0 = "roll a new one") ---
+            if (data.GoalTarget > 0)
+            {
+                DailyGoalTarget = data.GoalTarget;
+                DailyGoalProgress = Mathf.Clamp(data.GoalProgress, 0, data.GoalTarget);
+                DailyGoalDone = data.GoalDone;
+                IsRainyDay = data.Rainy;
+            }
+            else
+            {
+                RollNewDay();
+            }
+
             SelectedCropIndex = Mathf.Clamp(data.SelectedCrop, 0, CropDatabase.Count - 1);
             if (!IsCropUnlocked(SelectedCropIndex)) SelectedCropIndex = 0;
 
             RecomputeMarket();
+            if (WeatherSystem.Instance != null) WeatherSystem.Instance.SetRain(IsRainyDay);
             Notify();
         }
 
@@ -314,6 +338,10 @@ namespace FarmSim
                 Well = HasWell,
                 Sprinkler = HasSprinkler,
                 SavedAt = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                GoalTarget = DailyGoalTarget,
+                GoalProgress = DailyGoalProgress,
+                GoalDone = DailyGoalDone,
+                Rainy = IsRainyDay,
                 Store = new System.Collections.Generic.List<int>(Store)
             };
             if (_grid != null)
@@ -378,13 +406,25 @@ namespace FarmSim
                 new Color(0.74f, 0.79f, 0.82f),
                 daylight);
 
+            // v1.6.0: a rainy day reads as soft, grey and close.
+            float rainDim = IsRainyDay ? 1f : 0f;
+            if (IsRainyDay)
+            {
+                RenderSettings.ambientLight = Color.Lerp(RenderSettings.ambientLight,
+                    new Color(0.46f, 0.50f, 0.55f), 0.55f);
+                RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor,
+                    new Color(0.56f, 0.60f, 0.65f), 0.6f);
+            }
+            RenderSettings.fogEndDistance = Mathf.Lerp(190f, 115f, rainDim);
+
             if (_sun != null)
             {
                 float angle = Mathf.Lerp(18f, 152f, t);
                 _sun.transform.rotation = Quaternion.Euler(angle, 40f, 0f);
                 // Exposure is deliberately conservative: 1.25 blew the
                 // path and pond out to white in v1.0.1.
-                _sun.intensity = Mathf.Lerp(0.68f, 1.05f, daylight) * lightMul;
+                _sun.intensity = Mathf.Lerp(0.68f, 1.05f, daylight) * lightMul *
+                                 (IsRainyDay ? 0.45f : 1f);
                 _sun.color = Color.Lerp(
                     new Color(1f, 0.66f, 0.44f),
                     new Color(1f, 0.95f, 0.87f),
@@ -400,16 +440,30 @@ namespace FarmSim
             return Color.Lerp(b, c, (t - 0.5f) * 2f);
         }
 
+        /// <summary>
+        /// v1.6.0: picks today's weather and today's little task. Day one is
+        /// always calm and sunny so a new player is never rained on.
+        /// </summary>
+        private void RollNewDay()
+        {
+            DailyGoalTarget = 3 + Mathf.Min(5, Level);
+            DailyGoalProgress = 0;
+            DailyGoalDone = false;
+            IsRainyDay = Day > 1 && UnityEngine.Random.value < 0.3f;
+        }
+
         public void NextDay()
         {
             TimeInDay = DayLengthSeconds * 0.10f;
             Day++;
 
-            if (_grid != null)
-            {
-                _grid.OnNewDay();
-                if (HasSprinkler) _grid.WaterAll();
-            }
+            if (_grid != null) _grid.OnNewDay();
+
+            RollNewDay();
+
+            // Rain does the watering (the sprinkler does it on dry days).
+            if (_grid != null && (IsRainyDay || HasSprinkler)) _grid.WaterAll();
+            if (WeatherSystem.Instance != null) WeatherSystem.Instance.SetRain(IsRainyDay);
 
             RecomputeMarket();
             Notify();
@@ -417,7 +471,29 @@ namespace FarmSim
 
             if (SfxManager.Instance != null) SfxManager.Instance.PlayNewDay();
             if (UIManager.Instance != null)
+            {
                 UIManager.Instance.ShowToast(Localization.T("new_day") + " " + Day);
+                if (IsRainyDay)
+                    UIManager.Instance.ShowToast(Localization.T("rainy_day"));
+            }
+        }
+
+        /// <summary>Goal progress, awarded once per day.</summary>
+        private void AdvanceDailyGoal()
+        {
+            if (DailyGoalDone || DailyGoalTarget <= 0) return;
+
+            DailyGoalProgress++;
+            if (DailyGoalProgress < DailyGoalTarget) return;
+
+            DailyGoalDone = true;
+            int reward = 12 * DailyGoalTarget;
+            AddCoins(reward);
+
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayReady();
+            if (UIManager.Instance != null)
+                UIManager.Instance.ShowToast(
+                    Localization.T("goal_done") + "  +" + reward, false, true);
         }
 
         // ---------- economy ----------
@@ -448,6 +524,7 @@ namespace FarmSim
             Store[index]++;
             TotalHarvests++;
             AddXp(CropDatabase.Get(index).Xp);
+            AdvanceDailyGoal();
 
             if (!_harvestHintShown && UIManager.Instance != null)
             {
