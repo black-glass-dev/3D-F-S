@@ -43,6 +43,9 @@ namespace FarmSim
         private Material _flowerD;
         private Material _straw;
         private Material _shadow;
+        private Material _brick;
+        private Material _doorWood;
+        private Material _lamp;
 
         public Transform Build()
         {
@@ -92,7 +95,7 @@ namespace FarmSim
             _leafB = MaterialCache.Get(new Color(0.31f, 0.45f, 0.27f), SurfacePattern.Leaf);
             _leafC = MaterialCache.Get(new Color(0.19f, 0.31f, 0.21f), SurfacePattern.Leaf);
             _water = MaterialCache.Get(new Color(0.17f, 0.30f, 0.34f), SurfacePattern.Water);
-            _walls = MaterialCache.Get(new Color(0.82f, 0.78f, 0.66f), SurfacePattern.Wood);
+            _walls = MaterialCache.Get(new Color(0.84f, 0.80f, 0.69f), SurfacePattern.Smooth);
             _glass = MaterialCache.Get(new Color(0.35f, 0.45f, 0.48f), SurfacePattern.Smooth);
             _barnRed = MaterialCache.Get(new Color(0.45f, 0.22f, 0.18f), SurfacePattern.Wood);
             _roofRed = MaterialCache.Get(new Color(0.48f, 0.28f, 0.21f), SurfacePattern.Wood);
@@ -103,6 +106,9 @@ namespace FarmSim
             _flowerC = MaterialCache.Get(new Color(0.55f, 0.47f, 0.62f));
             _flowerD = MaterialCache.Get(new Color(0.85f, 0.83f, 0.76f));
             _straw = MaterialCache.Get(new Color(0.78f, 0.66f, 0.36f), SurfacePattern.Leaf);
+            _brick = MaterialCache.Get(new Color(0.55f, 0.33f, 0.27f), SurfacePattern.Stone);
+            _doorWood = MaterialCache.Get(new Color(0.42f, 0.29f, 0.19f), SurfacePattern.Wood);
+            _lamp = MaterialCache.Get(new Color(0.96f, 0.82f, 0.48f), SurfacePattern.Smooth);
             _shadow = MaterialCache.BlobMaterial;
         }
 
@@ -286,57 +292,109 @@ namespace FarmSim
             var house = new GameObject("House");
             house.transform.SetParent(_staticRoot, false);
             house.transform.localPosition = new Vector3(position.x, TerrainShape.Height(position.x, position.z), position.z);
-            float houseYaw = FacingCamera(position);
-            house.transform.localRotation = Quaternion.Euler(0f, houseYaw, 0f);
+            house.transform.localRotation = Quaternion.Euler(0f, FacingCamera(position), 0f);
 
-            AddContactShadow(house.transform, new Vector3(0f, 0.02f, 0f), 4.6f);
+            AddContactShadow(house.transform, new Vector3(0f, 0.02f, 0.15f), 7.4f);
 
-            // an imported model wins over the procedural house, if one exists
-            if (ModelLibrary.Spawn("house", house.transform, Vector3.zero, 4.2f) != null)
+            // A baked model always wins over the authored cottage, so a new scan
+            // can be dropped in without touching any code. v1.4.0 deliberately
+            // ships no baked house: the old scan was a ruined building with its
+            // own ground patch baked into the mesh, which is what made the house
+            // look broken and left a pale square on the lawn.
+            if (ModelLibrary.Spawn("house", house.transform, Vector3.zero, 5.2f) != null)
                 return;
 
-            AddBox(house.transform, new Vector3(0f, 0.14f, 0f), new Vector3(3.7f, 0.28f, 2.95f), _stone);
-            AddBox(house.transform, new Vector3(0f, 1.24f, 0f), new Vector3(3.4f, 1.94f, 2.7f), _walls);
+            // ---- stone plinth + timber base rail ----
+            AddBox(house.transform, new Vector3(0f, 0.17f, 0f), new Vector3(5.30f, 0.34f, 4.30f), _stone);
+            AddBox(house.transform, new Vector3(0f, 0.38f, 0f), new Vector3(5.04f, 0.12f, 4.04f), _woodDark);
 
+            // ---- plastered walls ----
+            AddBox(house.transform, new Vector3(0f, 1.50f, 0f), new Vector3(4.90f, 2.20f, 3.90f), _walls);
+
+            // timber frame: four corner posts, a mid rail and a top plate
+            AddBox(house.transform, new Vector3(-2.38f, 1.50f, 1.88f), new Vector3(0.19f, 2.20f, 0.19f), _woodDark);
+            AddBox(house.transform, new Vector3(2.38f, 1.50f, 1.88f), new Vector3(0.19f, 2.20f, 0.19f), _woodDark);
+            AddBox(house.transform, new Vector3(-2.38f, 1.50f, -1.88f), new Vector3(0.19f, 2.20f, 0.19f), _woodDark);
+            AddBox(house.transform, new Vector3(2.38f, 1.50f, -1.88f), new Vector3(0.19f, 2.20f, 0.19f), _woodDark);
+            AddBox(house.transform, new Vector3(0f, 0.40f, 0f), new Vector3(5.00f, 0.14f, 4.00f), _woodDark);
+            AddBox(house.transform, new Vector3(0f, 2.58f, 0f), new Vector3(5.08f, 0.18f, 4.08f), _woodDark);
+
+            // ---- gable roof; the ridge runs front-to-back so the triangle
+            //      faces the camera, exactly like the barn ----
             AddMesh(house.transform, "Roof", MeshFactory.Roof, _roofRed,
-                new Vector3(0f, 2.2f, 0f), new Vector3(3.98f, 1.25f, 3.28f), 0f);
+                new Vector3(0f, 2.67f, 0f), new Vector3(4.60f, 1.85f, 5.60f), 90f);
+            AddBox(house.transform, new Vector3(0f, 4.51f, 0f), new Vector3(0.22f, 0.13f, 4.62f), _woodDark);
+            AddBox(house.transform, new Vector3(0f, 2.71f, 2.29f), new Vector3(5.62f, 0.14f, 0.10f), _woodDark);
+            AddBox(house.transform, new Vector3(0f, 2.71f, -2.29f), new Vector3(5.62f, 0.14f, 0.10f), _woodDark);
 
-            // door + frame + handle
-            AddBox(house.transform, new Vector3(0f, 0.82f, 1.36f), new Vector3(0.9f, 1.4f, 0.08f), _woodDark);
-            AddBox(house.transform, new Vector3(0f, 0.78f, 1.40f), new Vector3(0.72f, 1.22f, 0.06f), _wood);
-            AddBox(house.transform, new Vector3(0.24f, 0.78f, 1.44f), new Vector3(0.06f, 0.06f, 0.05f), _stone);
+            // plastered gable panel + round window
+            AddBox(house.transform, new Vector3(0f, 3.02f, 2.33f), new Vector3(3.20f, 0.70f, 0.12f), _walls);
+            AddBox(house.transform, new Vector3(0f, 3.02f, 2.40f), new Vector3(0.70f, 0.70f, 0.06f), _woodDark);
+            AddBox(house.transform, new Vector3(0f, 3.02f, 2.44f), new Vector3(0.52f, 0.52f, 0.04f), _glass);
+            AddBox(house.transform, new Vector3(0f, 3.02f, 2.47f), new Vector3(0.05f, 0.52f, 0.03f), _wood);
+            AddBox(house.transform, new Vector3(0f, 3.02f, 2.47f), new Vector3(0.52f, 0.05f, 0.03f), _wood);
 
-            AddWindow(house.transform, new Vector3(-1.12f, 1.36f, 1.37f));
-            AddWindow(house.transform, new Vector3(1.12f, 1.36f, 1.37f));
+            // ---- chimney ----
+            AddBox(house.transform, new Vector3(1.42f, 4.10f, -0.55f), new Vector3(0.58f, 1.60f, 0.58f), _brick);
+            AddBox(house.transform, new Vector3(1.42f, 4.94f, -0.55f), new Vector3(0.72f, 0.14f, 0.72f), _rock);
+            AddBox(house.transform, new Vector3(1.42f, 5.06f, -0.55f), new Vector3(0.34f, 0.14f, 0.34f), _rock);
 
-            // chimney
-            AddBox(house.transform, new Vector3(1.1f, 3.1f, -0.6f), new Vector3(0.44f, 1.1f, 0.44f), _stone);
-            AddBox(house.transform, new Vector3(1.1f, 3.68f, -0.6f), new Vector3(0.54f, 0.1f, 0.54f), _rock);
+            // ---- front door ----
+            AddBox(house.transform, new Vector3(0f, 1.30f, 1.98f), new Vector3(1.08f, 1.70f, 0.10f), _woodDark);
+            AddBox(house.transform, new Vector3(0f, 1.29f, 2.03f), new Vector3(0.86f, 1.50f, 0.06f), _doorWood);
+            AddBox(house.transform, new Vector3(0f, 1.72f, 2.07f), new Vector3(0.56f, 0.40f, 0.03f), _glass);
+            AddSphere(house.transform, new Vector3(0.30f, 1.20f, 2.09f), Vector3.one * 0.06f, _rock);
+            AddBox(house.transform, new Vector3(0f, 0.12f, 2.44f), new Vector3(1.72f, 0.24f, 0.56f), _stone);
 
-            // porch: step + two posts + small shelter
-            AddBox(house.transform, new Vector3(0f, 0.1f, 1.66f), new Vector3(1.5f, 0.18f, 0.5f), _stone);
-            AddBox(house.transform, new Vector3(-0.85f, 1.1f, 1.72f), new Vector3(0.11f, 2.0f, 0.11f), _woodDark);
-            AddBox(house.transform, new Vector3(0.85f, 1.1f, 1.72f), new Vector3(0.11f, 2.0f, 0.11f), _woodDark);
-            AddBox(house.transform, new Vector3(0f, 2.1f, 1.62f), new Vector3(2.0f, 0.1f, 0.7f), _roofBrown);
+            // ---- porch ----
+            AddBox(house.transform, new Vector3(0f, 0.31f, 2.76f), new Vector3(3.30f, 0.16f, 1.24f), _wood);
+            AddBox(house.transform, new Vector3(-1.48f, 1.55f, 3.22f), new Vector3(0.15f, 2.50f, 0.15f), _woodDark);
+            AddBox(house.transform, new Vector3(1.48f, 1.55f, 3.22f), new Vector3(0.15f, 2.50f, 0.15f), _woodDark);
+            AddBoxRot(house.transform, new Vector3(0f, 2.99f, 2.74f), new Vector3(3.45f, 0.12f, 1.18f), _roofRed, new Vector3(-10f, 0f, 0f));
 
-            // flower boxes under the windows
-            AddBox(house.transform, new Vector3(-1.12f, 0.98f, 1.44f), new Vector3(0.72f, 0.16f, 0.2f), _woodDark);
-            AddBox(house.transform, new Vector3(1.12f, 0.98f, 1.44f), new Vector3(0.72f, 0.16f, 0.2f), _woodDark);
-            AddSphere(house.transform, new Vector3(-1.28f, 1.08f, 1.46f), Vector3.one * 0.13f, _flowerA);
-            AddSphere(house.transform, new Vector3(-0.98f, 1.08f, 1.46f), Vector3.one * 0.13f, _flowerB);
-            AddSphere(house.transform, new Vector3(1.26f, 1.08f, 1.46f), Vector3.one * 0.13f, _flowerC);
-            AddSphere(house.transform, new Vector3(0.96f, 1.08f, 1.46f), Vector3.one * 0.13f, _flowerA);
+            // ---- windows: two front, one each side ----
+            AddWindow(house.transform, new Vector3(-1.62f, 1.62f, 1.98f), 1.00f, 0f);
+            AddWindow(house.transform, new Vector3(1.62f, 1.62f, 1.98f), 1.00f, 0f);
+            AddWindow(house.transform, new Vector3(-2.44f, 1.62f, -0.20f), 0.90f, -90f);
+            AddWindow(house.transform, new Vector3(2.44f, 1.62f, -0.20f), 0.90f, 90f);
+
+            // ---- flower boxes under the front windows ----
+            AddBox(house.transform, new Vector3(-1.62f, 1.00f, 2.04f), new Vector3(1.04f, 0.18f, 0.28f), _woodDark);
+            AddBox(house.transform, new Vector3(1.62f, 1.00f, 2.04f), new Vector3(1.04f, 0.18f, 0.28f), _woodDark);
+            AddSphere(house.transform, new Vector3(-1.84f, 1.12f, 2.04f), Vector3.one * 0.13f, _flowerA);
+            AddSphere(house.transform, new Vector3(-1.52f, 1.12f, 2.06f), Vector3.one * 0.12f, _flowerB);
+            AddSphere(house.transform, new Vector3(-1.22f, 1.12f, 2.04f), Vector3.one * 0.12f, _flowerC);
+            AddSphere(house.transform, new Vector3(1.40f, 1.12f, 2.04f), Vector3.one * 0.12f, _flowerB);
+            AddSphere(house.transform, new Vector3(1.70f, 1.12f, 2.06f), Vector3.one * 0.13f, _flowerD);
+            AddSphere(house.transform, new Vector3(2.00f, 1.12f, 2.04f), Vector3.one * 0.12f, _flowerA);
+
+            // ---- porch lamp ----
+            AddBox(house.transform, new Vector3(0.94f, 2.10f, 2.02f), new Vector3(0.16f, 0.24f, 0.16f), _woodDark);
+            AddSphere(house.transform, new Vector3(0.94f, 2.08f, 2.13f), Vector3.one * 0.11f, _lamp);
         }
 
-        private void AddWindow(Transform parent, Vector3 localPosition)
+        /// <summary>
+        /// Framed window: sill, frame, glass, cross bars and shutters.
+        /// <paramref name="yaw"/> lets the same helper dress the side walls.
+        /// </summary>
+        private void AddWindow(Transform parent, Vector3 localPosition, float size, float yaw)
         {
-            AddBox(parent, localPosition, new Vector3(0.74f, 0.74f, 0.05f), _woodDark);
-            AddBox(parent, localPosition + new Vector3(0f, 0f, 0.02f), new Vector3(0.58f, 0.58f, 0.04f), _glass);
-            AddBox(parent, localPosition + new Vector3(0f, 0f, 0.04f), new Vector3(0.055f, 0.58f, 0.03f), _wood);
-            AddBox(parent, localPosition + new Vector3(0f, 0f, 0.04f), new Vector3(0.58f, 0.055f, 0.03f), _wood);
-            // shutters
-            AddBox(parent, localPosition + new Vector3(-0.44f, 0f, 0.01f), new Vector3(0.12f, 0.7f, 0.05f), _wood);
-            AddBox(parent, localPosition + new Vector3(0.44f, 0f, 0.01f), new Vector3(0.12f, 0.7f, 0.05f), _wood);
+            Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
+            Vector3 fwd = rot * Vector3.forward;
+            Vector3 right = rot * Vector3.right;
+            Vector3 up = Vector3.up;
+            float half = size * 0.5f;
+
+            AddBox(parent, localPosition, new Vector3(size, size, 0.07f), _woodDark, yaw);
+            AddBox(parent, localPosition + fwd * 0.03f, new Vector3(size * 0.80f, size * 0.80f, 0.05f), _glass, yaw);
+            AddBox(parent, localPosition + fwd * 0.06f, new Vector3(0.055f, size * 0.80f, 0.03f), _wood, yaw);
+            AddBox(parent, localPosition + fwd * 0.06f, new Vector3(size * 0.80f, 0.055f, 0.03f), _wood, yaw);
+            AddBox(parent, localPosition - up * (half + 0.04f) + fwd * 0.05f,
+                new Vector3(size * 1.26f, 0.09f, 0.18f), _stone, yaw);
+            AddBox(parent, localPosition - right * (half + 0.10f) + fwd * 0.01f,
+                new Vector3(0.13f, size * 0.94f, 0.05f), _woodDark, yaw);
+            AddBox(parent, localPosition + right * (half + 0.10f) + fwd * 0.01f,
+                new Vector3(0.13f, size * 0.94f, 0.05f), _woodDark, yaw);
         }
 
         private void BuildBarn(Vector3 position)
@@ -914,6 +972,18 @@ namespace FarmSim
             box.transform.localPosition = localPosition;
             box.transform.localScale = scale;
             box.transform.localRotation = Quaternion.Euler(0f, yRotation, 0f);
+            box.GetComponent<Renderer>().sharedMaterial = material;
+            Object.Destroy(box.GetComponent<Collider>());
+        }
+
+        private static void AddBoxRot(Transform parent, Vector3 localPosition, Vector3 scale,
+            Material material, Vector3 euler)
+        {
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.transform.SetParent(parent, false);
+            box.transform.localPosition = localPosition;
+            box.transform.localScale = scale;
+            box.transform.localRotation = Quaternion.Euler(euler);
             box.GetComponent<Renderer>().sharedMaterial = material;
             Object.Destroy(box.GetComponent<Collider>());
         }
