@@ -91,7 +91,7 @@ namespace FarmSim
             // The camera orbits ~31 m from the farm, so the old 32 m fog start
             // put haze over the whole scene and flattened every shadow.
             RenderSettings.fogStartDistance = 78f;
-            RenderSettings.fogEndDistance = 260f;
+            RenderSettings.fogEndDistance = 190f;   // stays inside the 200 m far plane
             RenderSettings.fogColor = new Color(0.72f, 0.77f, 0.80f);
         }
 
@@ -182,6 +182,29 @@ namespace FarmSim
         {
             if (worldRoot == null) return;
 
+            // ---- per-renderer clean-up: free wins, no visual change ----
+            var renderers = worldRoot.GetComponentsInChildren<MeshRenderer>(true);
+            int shadowless = 0;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var r = renderers[i];
+                if (r == null) continue;
+
+                // Nothing in this world moves, so probe lookups are pure cost.
+                r.lightProbeUsage = LightProbeUsage.Off;
+                r.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                r.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+
+                // Pebbles, flowers, fence pickets and flower boxes are not worth
+                // shadow-map triangles; the shadow pass is the most expensive
+                // part of the frame on a mid-range phone.
+                if (r.shadowCastingMode != ShadowCastingMode.Off && r.bounds.size.magnitude < 1.1f)
+                {
+                    r.shadowCastingMode = ShadowCastingMode.Off;
+                    shadowless++;
+                }
+            }
+
             var filters = worldRoot.GetComponentsInChildren<MeshFilter>(true);
             for (int i = 0; i < filters.Length; i++)
             {
@@ -197,6 +220,9 @@ namespace FarmSim
             {
                 Debug.LogWarning("Static batching skipped: " + e.Message);
             }
+
+            Debug.Log("[FarmSim] static world: " + renderers.Length + " renderers, " +
+                      shadowless + " moved out of the shadow pass");
         }
     }
 }
