@@ -47,7 +47,8 @@ namespace FarmSim
             // which made the rain streak sideways across the farm. Rotating the
             // emitter 90 degrees about X points +Z straight down, while the
             // box itself (46 x 46 x 0.2 in local space) stays a flat slab.
-            go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            // (the 8 degrees of yaw tilt the drops slightly, for wind)
+            go.transform.localRotation = Quaternion.Euler(90f, 0f, 8f);
 
             var ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -71,13 +72,6 @@ namespace FarmSim
             shape.shapeType = ParticleSystemShapeType.Box;
             shape.scale = new Vector3(46f, 46f, 0.2f);
 
-            // a touch of sideways drift so the drops are not perfectly vertical
-            var velocity = ps.velocityOverLifetime;
-            velocity.enabled = true;
-            velocity.separateAxes = true;      // x/y/z are ignored without this
-            velocity.space = ParticleSystemSimulationSpace.World;
-            velocity.x = new ParticleSystem.MinMaxCurve(0.9f, 1.8f);
-            velocity.z = new ParticleSystem.MinMaxCurve(-0.4f, 0.4f);
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             if (renderer != null)
