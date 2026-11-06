@@ -14,6 +14,7 @@ namespace FarmSim
         private static Mesh _tuft;
         private static Mesh _thinCone;
         private static Mesh _roof;
+        private static Mesh _plotSoil;
         private static Mesh _trunk;
         private static Mesh _bush;
         private static Mesh _disc;
@@ -36,6 +37,89 @@ namespace FarmSim
             {
                 if (_thinCone == null) _thinCone = BuildCone(12, 0.5f, 1f, "ThinCone");
                 return _thinCone;
+            }
+        }
+
+        /// <summary>
+        /// v1.7.0: one mesh holds the whole soil tile — slab, three furrows and a
+        /// couple of pebble bumps. The old code built six separate primitives per
+        /// plot, so a 36-plot field carried 216 renderers before a single seed was
+        /// planted. Every plot now shares this mesh: one draw batch, one material
+        /// switch between dry and watered soil.
+        /// </summary>
+        public static Mesh PlotSoil
+        {
+            get
+            {
+                if (_plotSoil == null) _plotSoil = BuildPlotSoil();
+                return _plotSoil;
+            }
+        }
+
+        private static Mesh BuildPlotSoil()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+
+            AppendBox(verts, uvs, tris, new Vector3(0f, 0.06f, 0f), new Vector3(1f, 0.12f, 1f));
+            for (int i = 0; i < 3; i++)
+                AppendBox(verts, uvs, tris,
+                    new Vector3(-0.28f + i * 0.28f, 0.135f, 0f), new Vector3(0.10f, 0.035f, 0.86f));
+            AppendBox(verts, uvs, tris, new Vector3(0.30f, 0.135f, 0.26f), new Vector3(0.09f, 0.05f, 0.07f));
+            AppendBox(verts, uvs, tris, new Vector3(-0.24f, 0.135f, -0.30f), new Vector3(0.07f, 0.045f, 0.08f));
+
+            var mesh = new Mesh { name = "PlotSoil" };
+            mesh.SetVertices(verts);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static void AppendBox(List<Vector3> verts, List<Vector2> uvs, List<int> tris,
+            Vector3 center, Vector3 size)
+        {
+            Vector3 h = size * 0.5f;
+            Vector3 x = new Vector3(h.x, 0f, 0f);
+            Vector3 y = new Vector3(0f, h.y, 0f);
+            Vector3 z = new Vector3(0f, 0f, h.z);
+
+            // +X / -X
+            AppendQuad(verts, uvs, tris, center + x - y - z, center + x - y + z, center + x + y + z, center + x + y - z, Vector3.right);
+            AppendQuad(verts, uvs, tris, center - x - y + z, center - x - y - z, center - x + y - z, center - x + y + z, Vector3.left);
+            // +Y / -Y
+            AppendQuad(verts, uvs, tris, center - x + y - z, center + x + y - z, center + x + y + z, center - x + y + z, Vector3.up);
+            AppendQuad(verts, uvs, tris, center - x - y + z, center + x - y + z, center + x - y - z, center - x - y - z, Vector3.down);
+            // +Z / -Z
+            AppendQuad(verts, uvs, tris, center - x - y + z, center + x - y + z, center + x + y + z, center - x + y + z, Vector3.forward);
+            AppendQuad(verts, uvs, tris, center + x - y - z, center - x - y - z, center - x + y - z, center + x + y - z, Vector3.back);
+        }
+
+        /// <summary>Adds a quad and fixes its winding to face <paramref name="normal"/>.</summary>
+        private static void AppendQuad(List<Vector3> verts, List<Vector2> uvs, List<int> tris,
+            Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal)
+        {
+            int i = verts.Count;
+            verts.Add(a);
+            verts.Add(b);
+            verts.Add(c);
+            verts.Add(d);
+            uvs.Add(new Vector2(0f, 0f));
+            uvs.Add(new Vector2(1f, 0f));
+            uvs.Add(new Vector2(1f, 1f));
+            uvs.Add(new Vector2(0f, 1f));
+
+            if (Vector3.Dot(Vector3.Cross(b - a, c - a), normal) >= 0f)
+            {
+                tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
+                tris.Add(i); tris.Add(i + 2); tris.Add(i + 3);
+            }
+            else
+            {
+                tris.Add(i); tris.Add(i + 2); tris.Add(i + 1);
+                tris.Add(i); tris.Add(i + 3); tris.Add(i + 2);
             }
         }
 

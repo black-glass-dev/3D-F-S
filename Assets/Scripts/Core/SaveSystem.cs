@@ -39,6 +39,12 @@ namespace FarmSim
         /// while the app is closed (capped in FarmGrid).</summary>
         public long SavedAt = 0;
 
+        // --- v1.6 ---
+        public int GoalTarget = 0;
+        public int GoalProgress = 0;
+        public bool GoalDone = false;
+        public bool Rainy = false;
+
         public List<PlotSaveData> Plots = new List<PlotSaveData>();
     }
 
